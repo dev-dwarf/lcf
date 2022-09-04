@@ -1,7 +1,9 @@
+
 #include "lcf_types.h"
 
 /* Unions to help manipulate bits of floats directly
-   TODO(lcf): should these unions be in types.h? would these be useful anywhere else.
+   TODO(lcf): should these unions be in types.h?
+   Consider if these would be useful anywhere else.
  */
 typedef union _f32_bits { f32 f; u32 bits; } f32_bits;
 typedef union _f64_bits { f64 f; u64 bits; } f64_bits;

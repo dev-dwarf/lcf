@@ -25,6 +25,7 @@
 #define CLAMP(a,x,b) (((x)<(a))?(a):((b)<(x))?(b):(x))
 #define CLAMPTOP(a,b) MIN(a,b)
 #define CLAMPBOTTOM(a,b) MAX(a,b)
+#define ISPOWER2(x) (x & (x-1) == 0)
 
 /* Assertion */
 #define STATEMENT(S) do { S } while(0)
@@ -48,15 +49,6 @@
 #define MACRO_EXPAND(S) #S
 #define _MACRO_CONCAT(S1,S2) S1##S2
 #define MACRO_CONCAT(S1,S2) _MACRO_CONCAT(S1,S2)
-
-/* Sizes */
-#define KB(x) ((x) << 10)
-#define MB(x) ((x) << 20)
-#define GB(x) ((x) << 30)
-#define TB(x) ((x) << 40)
-
-/* Memory */
-/* #define MEMORY_ZERO(p, z) */
 
 /** ******************************** **/
 
