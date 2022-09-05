@@ -1,5 +1,23 @@
 #include "lcf_memory.h"
-#include <string.h> /* only for memset */
+#include <string.h> /* only for memset, memcpy */
+#define B_PTR(p) (u8*)(p)
+
+internal b32 is_power_of_2(u64 x) {
+    return ((x & (x-1)) == 0);
+}
+
+internal u64 next_alignment(u64 ptr, u64 alignment) {
+    ASSERT(is_power_of_2(alignment));
+
+    /* Fast replacement for mod because alignment is power of 2 */
+    u64 modulo = ptr & (alignment-1);
+
+    if (modulo != 0) {
+        ptr += alignment - modulo;
+    }
+
+    return ptr;
+}
 
 /** Arena ********************************/
 Arena Arena_create_custom(u64 size, u64 commit_size) {
@@ -28,30 +46,12 @@ Arena Arena_create(u64 size) {
     return a;
 }
 
-Arena Arena_create_default() {
+Arena Arena_create_default(void) {
     return Arena_create(LCF_MEMORY_DEFAULT_RESERVE_SIZE);
 }
 
 void Arena_destroy(Arena *a) {
     LCF_MEMORY_free(a->memory, a->size);
-    *a = { 0 };
-}
-
-internal b32 is_power_of_2(u64 x) {
-    return (x & (x-1) == 0);
-}
-
-internal u64 next_alignment(u64 ptr, u64 alignment) {
-    ASSERT(is_power_of_2(alignment));
-
-    /* Fast replacement for mod because alignment is power of 2 */
-    u64 modulo = ptr & (alignment-1);
-
-    if (modulo != 0) {
-        ptr += alignment - modulo;
-    }
-
-    return ptr;
 }
 
 void* Arena_take_custom(Arena *a, u64 size, u64 alignment, u64 commit_size) {
@@ -68,8 +68,8 @@ void* Arena_take_custom(Arena *a, u64 size, u64 alignment, u64 commit_size) {
         /* Commit memory if needed */
         if (new_pos >= commited_pos) {
             u64 new_commited_pos = next_alignment(mem + new_pos, commit_size);
-            u64 commit_size = new_commited_pos - commited_pos;
-            if (LCF_MEMORY_commit((u8*)(mem + commited_pos), commit_size)) {
+            u64 need_to_commit_size = new_commited_pos - commited_pos;
+            if (LCF_MEMORY_commit(B_PTR(mem + commited_pos), need_to_commit_size)) {
                 a->commited_pos = commited_pos = new_commited_pos;
             }
         }
@@ -110,12 +110,12 @@ void Arena_reset_decommit_custom(Arena *a, u64 pos, u64 commit_size) {
     u64 commited_pos = a->commited_pos;
     u64 needed_commited_pos = next_alignment(mem + pos, commit_size) - mem;
     if (needed_commited_pos < commited_pos) {
-        LCF_MEMORY_decommit((u8*)(mem+needed_commited_pos), commited_pos-needed_commited_pos);
+        LCF_MEMORY_decommit(B_PTR(mem+needed_commited_pos), commited_pos-needed_commited_pos);
         a->commited_pos = needed_commited_pos;
     }
 }
 
-void Arena_reset_decommit_custom(Arena *a, u64 pos) {
+void Arena_reset_decommit(Arena *a, u64 pos) {
     Arena_reset_decommit_custom(a, pos, LCF_MEMORY_DEFAULT_COMMIT_SIZE);
 }
 
@@ -125,6 +125,35 @@ void Arena_reset_all_decommit(Arena *a) {
     /* decommit all */
     LCF_MEMORY_decommit(a->memory, a->commited_pos);
     a->commited_pos = 0;
+}
+
+void* Arena_resize_custom(Arena *a, void* old_memory, u64 old_size, u64 new_size, u64 alignment, u64 commit_size) {
+    void* result = 0;
+
+    if (old_memory == 0 || old_size == 0) {
+        return Arena_take_custom(a, new_size, alignment, commit_size);
+    } else if ((a->memory <= old_memory) && (B_PTR(old_memory) < B_PTR(a->memory)+a->size)) {
+        /* Check that old_memory was most recently taken block */
+        if (B_PTR(old_memory) == (B_PTR(a->memory) + (a->pos - old_size))) {
+            result = old_memory;
+            a->pos = a->pos - old_size + new_size;
+            if (old_size < new_size) {
+                memset(B_PTR(old_memory)+old_size, 0, new_size-old_size);
+            }
+        } else {
+            result = Arena_take_custom(a, new_size, alignment, commit_size);
+            memcpy(result, old_memory, old_size);
+        }
+    } else {
+        ASSERT(0 && "old_memory is not within the bounds of the Arena's buffer.");
+    }
+
+    return result;
+}
+
+void* Arena_resize(Arena *a, void* old_memory, u64 old_size, u64 new_size) {
+    return Arena_resize_custom(a, old_memory, old_size, new_size,
+                               LCF_MEMORY_DEFAULT_ALIGNMENT, LCF_MEMORY_DEFAULT_COMMIT_SIZE);
 }
 
 ArenaSession ArenaSession_begin(Arena *a) {
@@ -137,7 +166,7 @@ ArenaSession ArenaSession_begin(Arena *a) {
 void ArenaSession_end(ArenaSession s) {
     Arena_reset(s.arena, s.session_start);
 }
-/** **************************************/
+/** ****w**********************************/
 
 
 /** Bump *********************************/
@@ -154,7 +183,7 @@ void Bump_create_inplace(u64 size, Bump *bump_memory) {
     Bump b;
     b.size = size-sizeof(Bump);
     b.pos = 0;
-    b.memory = (u8*)((u64)bump_memory+sizeof(Bump));
+    b.memory = B_PTR((u64)bump_memory+sizeof(Bump));
     *bump_memory = b;
 }
 
@@ -189,6 +218,35 @@ void Bump_reset_all(Bump *b) {
     Bump_reset(b, 0);
 }
 
+void* Bump_resize_custom(Bump *b, void* old_memory, u64 old_size, u64 new_size, u64 alignment) {
+    void* result = 0;
+
+    if (old_memory == 0 || old_size == 0) {
+        return Bump_take_custom(b, new_size, alignment);
+    } else if ((b->memory <= old_memory) && (B_PTR(old_memory) < B_PTR(b->memory)+b->size)) {
+        /* Check that old_memory was most recently taken block */
+        if (B_PTR(old_memory) == (B_PTR(b->memory) + (b->pos - old_size))) {
+            result = old_memory;
+            b->pos = b->pos - old_size + new_size;
+            if (old_size < new_size) {
+                memset(B_PTR(old_memory)+old_size, 0, new_size-old_size);
+            }
+        } else {
+            result = Bump_take_custom(b, new_size, alignment);
+            memcpy(result, old_memory, old_size);
+        }
+    } else {
+        ASSERT(0 && "old_memory is not within the bounds of the Bump's buffer.");
+    }
+
+    return result;
+}
+
+void* Bump_resize(Bump *b, void* old_memory, u64 old_size, u64 new_size) {
+    return Bump_resize_custom(b, old_memory, old_size, new_size,
+                              LCF_MEMORY_DEFAULT_ALIGNMENT);
+}
+
 BumpSession BumpSession_begin(Bump *b) {
     BumpSession s;
     s.bump = b;
@@ -200,3 +258,5 @@ void BumpSession_end(BumpSession s) {
     Bump_reset(s.bump, s.session_start);
 }
 /** **************************************/
+
+#undef B_PTR

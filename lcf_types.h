@@ -8,7 +8,7 @@
 
 ************************************ **/
 #if !defined(LCF_TYPES)
-#define LCF_TYPES
+#define LCF_TYPES "1.0.0"
 
 /** Convenience Macros               **/
 /* Keywords */
@@ -18,6 +18,13 @@
 #define c_linkage extern "C"
 #define and &&
 #define or ||
+#define not !
+#ifndef true
+#define true 1
+#endif
+#ifndef false
+#define false 0
+#endif
 
 /* Math  */
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -49,14 +56,14 @@
 #define MACRO_EXPAND(S) #S
 #define _MACRO_CONCAT(S1,S2) S1##S2
 #define MACRO_CONCAT(S1,S2) _MACRO_CONCAT(S1,S2)
-
+#define MACRO_VAR(var) var##__FILE__##__LINE__
 /** ******************************** **/
 
 
-/** Portable, Short Primitive Types  **/
+/** Portable, Abbreviated Primitive Types  **/
 #include <stdint.h>
-#define TYPE_MIN(t,val) global t MACRO_CONCAT(t,_min) = ((t) val)
-#define TYPE_MAX(t,val) global t MACRO_CONCAT(t,_max) = ((t) val)
+#define TYPE_MIN(t,val) global t MACRO_CONCAT(t,_MIN) = ((t) val)
+#define TYPE_MAX(t,val) global t MACRO_CONCAT(t,_MAX) = ((t) val)
 
 /* Signed Int */
 typedef int8_t i8;   TYPE_MIN(i8, 0x80);        TYPE_MAX(i8,0x7F);
@@ -74,8 +81,8 @@ typedef uint64_t u64; TYPE_MAX(u64, 0xFFFFFFFF);
 #undef TYPE_MAX
 
 /* Bool/Bits */
-typedef i8 b8;
-typedef i16 b16;
+typedef u8 b8;
+typedef u16 b16;
 typedef i32 b32;
 typedef i64 b64;
 

@@ -1,7 +1,7 @@
 /** ************************************
   LCF, Created (September 03, 2022)
 
-  Description:
+  Purpose:
   Abstract over virtual memory for use by allocators. Can (Should) be overriden by OS layer.
   Using virtual memory abstraction, provide managed Arena allocator.
   Provide simple Bump allocator, and fixed-size memory Pool allocator, both using user-memory.
@@ -10,7 +10,7 @@
 
 ************************************ **/
 #if !defined(LCF_MEMORY)
-#define LCF_MEMORY
+#define LCF_MEMORY "1.0.0"
 
 #include "lcf_types.h"
 
@@ -69,10 +69,10 @@ internal LCF_MEMORY_FREE_MEMORY(_lcf_memory_default_free) {
 
 
 /* TODO:
+ * Pool REF: https://www.gingerbill.org/article/2019/02/15/memory-allocation-strategies-003/#fnref:3
  * Memory allocator struct/type that can be used as parameter
  * Stack REF: https://www.gingerbill.org/article/2019/02/15/memory-allocation-strategies-003/
  * Linked List
- * Pool REF: https://www.gingerbill.org/article/2019/02/15/memory-allocation-strategies-003/#fnref:3
 
  Functions that need allocation facilities should take an arena as parameter.
  Allocators should work with a backing block of OS-allocated memory, that can be passed in
@@ -104,21 +104,17 @@ struct lcf_Arena {
     u64 commited_pos;
     void *memory;
 };
-typedef lcf_Arena Arena;
+typedef struct lcf_Arena Arena;
 
 /* Create and destroy Arenas */
-Arena Arena_create_default(); 
+Arena Arena_create_default(void); 
 Arena Arena_create(u64 size);
 Arena Arena_create_custom(u64 size, u64 commit_size);
 void Arena_destroy(Arena *a); 
 
 /* Take memory from the arena */
 void* Arena_take(Arena *a, u64 size);
-void* Arena_take_custom(Arena *a, u64 size, u64 alignment);
-// TODO(lcf): Arena_take_resize, Arena_take_resize_custom
-// Resize procs take a pointer. If the pointer was the last alloc, bump pos to new size.
-// If the pointer was not the last alloc, we instead have to just alloc new memory.
-// REF: https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002/
+void* Arena_take_custom(Arena *a, u64 size, u64 alignment, u64 commit_size);
 
 /* Reset arena to a certain position */
 void Arena_reset(Arena *a, u64 pos);
@@ -127,12 +123,16 @@ void Arena_reset_decommit_custom(Arena *a, u64 pos, u64 commit_size);
 void Arena_reset_decommit(Arena *a, u64 pos);
 void Arena_reset_all_decommit(Arena *a);
 
+/* Resize blocks without destroying data.
+   (only a performance savings when old_memory was most recently taken block) */
+void* Arena_resize(Arena *a, void* old_memory, u64 old_size, u64 new_size);
+void* Arena_resize_custom(Arena *a, void* old_memory, u64 old_size, u64 new_size, u64 alignment, u64 commit_size);
 /* Arena sessions - wraps resetting memory */
 struct lcf_ArenaSession {
     Arena *arena;
     u64 session_start;
 };
-typedef lcf_ArenaSession ArenaSession;
+typedef struct lcf_ArenaSession ArenaSession;
 
 ArenaSession ArenaSession_begin(Arena *a);
 void ArenaSession_end(ArenaSession s);
@@ -156,7 +156,7 @@ struct lcf_Bump {
     u64 pos;
     void* memory;
 };
-typedef lcf_Bump Bump;
+typedef struct lcf_Bump Bump;
 
 /* Create Bumps */
 Bump Bump_create(u64 size, void *memory);
@@ -167,17 +167,18 @@ void* Bump_take(Bump *b, u64 size);
 void* Bump_take_custom(Bump *b, u64 size, u64 alignment);
 void Bump_reset(Bump *b, u64 pos);
 void Bump_reset_all(Bump *b);
-// TODO(lcf): Bump_take_resize, Bump_take_resize_custom
-// Resize procs take a pointer. If the pointer was the last alloc, bump pos to new size.
-// If the pointer was not the last alloc, we instead have to just alloc new memory.
-// REF: https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002/
+
+/* Resize blocks without destroying data.
+   (only a performance savings when old_memory was most recently taken block) */
+void* Bump_resize(Bump *b, void* old_memory, u64 old_size, u64 new_size);
+void* Bump_resize_custom(Bump *b, void* old_memory, u64 old_size, u64 new_size, u64 alignment);
 
 /* Bump Sessions */
 struct lcf_BumpSession {
     Bump* bump;
     u64 session_start;
 };
-typedef lcf_BumpSession BumpSession;
+typedef struct lcf_BumpSession BumpSession;
 BumpSession BumpSession_begin(Bump *b);
 void BumpSession_end(BumpSession s);
 

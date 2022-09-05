@@ -8,7 +8,7 @@
 
 ************************************ **/
 #if !defined(LCF_MATH)
-#define LCF_MATH
+#define LCF_MATH "1.0.0"
 
 /** Constants, Radians, and Conversions **/
 #include "lcf_types.h"
@@ -26,10 +26,10 @@ global f64 f64_e = 2.71828182846;
 global f64 f64_golden_ratio = 1.61803398875;
 global f64 f64_golden_ratio_inv = 0.61803398875;
 
-f32 f32_radians(f32 a);
-f64 f64_radians(f64 a);
-f32 f32_degrees(f32 a);
-f64 f64_degrees(f64 a);
+f32 f32_to_radians(f32 a);
+f64 f64_to_radians(f64 a);
+f32 f32_to_degrees(f32 a);
+f64 f64_to_degrees(f64 a);
 /** ******************************** **/
 
 

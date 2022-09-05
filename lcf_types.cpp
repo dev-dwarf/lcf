@@ -24,7 +24,7 @@ f32 f32_abs(f32 f) {
     f32_bits x;
     x.f = f;
     x.bits &= 0x7FFFFFFF;
-    return x;
+    return x.f;
 }
 
 f32 f32_sign(f32 f) {
@@ -49,7 +49,7 @@ f64 f64_abs(f64 f) {
     f64_bits x;
     x.f = f;
     x.bits &= 0x7FFFFFFFFFFFFFFF;
-    return x;
+    return x.f;
 }
 
 f64 f64_sign(f64 f) {
