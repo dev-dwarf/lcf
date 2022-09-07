@@ -57,13 +57,13 @@ str8 str8_skip(str8 s, u64 len) {
 
 str8 str8_substr_between(str8 s, u64 start, u64 end) {
     u64 end_clamped = CLAMPTOP(end, s.len);
-    RET_STR8(s.str + start, s.len-(start+(s.len-end_clamped)));
+    RET_STR8(s.str + start, end_clamped-start);
 }
 
 str8 str8_substr(str8 s, u64 start, u64 n) {
-    RET_STR8(s.str + start, s.len-(start+n));
+    u64 len_clamped = CLAMPTOP(s.len-start, n);
+    RET_STR8(s.str + start, len_clamped);
 }
-
 
 /* Operations that need memory */
 str8 str8_copy(Arena *a, str8 s) {
@@ -97,17 +97,20 @@ str8 str8_concat_custom(void *memory, str8 s1, str8 s2) {
 
 /* Comparisons / Predicates */
 b32 str8_eq(str8 a, str8 b) {
-    return (a.len != b.len)
-        && (memcmp(a.str, b.str, a.len) == 0);
+    return (a.len == b.len) &&
+        ((str8_is_empty(a))
+         || (memcmp(a.str, b.str, a.len) == 0));
 }
 
 b32 str8_has_prefix(str8 s, str8 prefix) {
     return (prefix.len < s.len) &&
+        (str8_not_empty(prefix)) &&
         (memcmp(s.str, prefix.str, prefix.len) == 0);
 }
 
 b32 str8_has_postfix(str8 s, str8 postfix) {
     return (postfix.len < s.len) &&
+        (str8_not_empty(postfix)) && 
         (memcmp(s.str+(s.len-postfix.len), postfix.str, postfix.len) == 0);
 }
 
@@ -124,9 +127,9 @@ b32 char8_is_whitespace(char8 c) {
 }
 
 b32 str8_contains_char(str8 s, char8 find) {
-    return str8_char_location(s,c) != LCF_STRING_NO_MATCH;
+    return str8_char_location(s,find) != LCF_STRING_NO_MATCH;
 }
-u64 str8_char_location(str8 s, char8 c) {
+u64 str8_char_location(str8 s, char8 find) {
     str8_iter(s) {
         if (c == find) {
             return i;
@@ -138,10 +141,16 @@ u64 str8_char_location(str8 s, char8 c) {
 b32 str8_contains_substring(str8 s, str8 sub) {
     return str8_substring_location(s,sub) != LCF_STRING_NO_MATCH;
 }
-u64 str8_substring_location(str8 s, char8 sub) {
+u64 str8_substring_location(str8 s, str8 sub) {
     u32 match = 0;
+    if (str8_is_empty(s)) {
+        return 0;
+    }
+    if (str8_is_empty(sub)) {
+        return LCF_STRING_NO_MATCH;
+    }
     str8_iter(s) {
-        if (sub == sub.str[match]) {
+        if (c == sub.str[match]) {
             match++;
             if (match == sub.len) {
                 return i+1-match;
@@ -159,6 +168,12 @@ b32 str8_contains_delimiter(str8 s, str8 delims) {
     return str8_delimiter_location(s, delims) != LCF_STRING_NO_MATCH;
 }
 u64 str8_delimiter_location(str8 s, str8 delims) {
+    if (str8_is_empty(s)) {
+        return 0;
+    }
+    if (str8_is_empty(delims)) {
+        return LCF_STRING_NO_MATCH;
+    }
     str8_iter(s) {
         str8_iter_custom(delims, j, delim) {
             if (c == delim) {
@@ -214,7 +229,7 @@ str8 str8_trim_whitespace_back(str8 s) {
     return s;
 }
 
-str8 str8_pop_first_split(str8 *src, str8 split_by) {
+str8 str8_pop_first_split_substring(str8 *src, str8 split_by) {
     str8 s = *src;
     u64 match = str8_substring_location(s, split_by);
     if (match == LCF_STRING_NO_MATCH) {
@@ -222,11 +237,98 @@ str8 str8_pop_first_split(str8 *src, str8 split_by) {
         s.len = 0;
     } else {
         u64 delta = match + split_by.len;
-        *src.str = s.str + delta;
-        *src.len = s.len - delta;
+        src->str = s.str + delta;
+        src->len = s.len - delta;
         s.len = match;
     }
     return s;
+}
+
+/* Formatting */
+/* TODO: remove dependency on sprintf, replace with custom formatting */
+#include <stdio.h>
+
+Prn8 Prn8_stdout(u32 buf_len, char8* buf) {
+    Prn8 p = { 0 };
+    p.buf_len = buf_len;
+    p.buf = buf;
+    p.output_type = STDIO_FILE;
+    p.out.file = stdout;
+    memset(buf, 0, buf_len);
+    return p;
+}
+
+void Prn8_str8(Prn8* ctx, str8 s) {
+    /* Check if buffer has enough space */
+    i32 tabs = ctx->tabs;
+    u32 len_to_write = s.len;
+    b32 auto_newline = (ctx->flags & MANUAL_NEWLINE) == 0;
+
+    if (auto_newline) {
+        len_to_write += 1; /* Need extra char to write newline */
+        len_to_write += tabs; /* Always need space for tabs when doing newlines too. */
+    }
+
+    /* Negative tabs means already written for this line */
+    if (!auto_newline && (tabs > 0)) { 
+        len_to_write += tabs;
+        ctx->tabs = -tabs;
+    }
+    
+    if (!(ctx->buf_pos+len_to_write < ctx->buf_len)) {
+        // Flush buffer?? 
+    }
+
+    /* Assume ctx valid */
+    u32 pos = ctx->buf_pos;
+    if (tabs > 0) {
+        memset(ctx->buf+pos, '\t', tabs);
+        pos += tabs;
+    }
+    memcpy(ctx->buf + pos, s.str, s.len);
+    pos += s.len;
+    
+    if (!(ctx->flags & MANUAL_NEWLINE)) {
+        ctx->buf[pos] = '\n';
+        pos += 1;
+    }
+
+    ASSERT(ctx->buf_pos+len_to_write == pos);
+    ctx->buf_pos = pos;
+}
+
+void Prn8_newline(Prn8* ctx) {
+    /* TODO: check that there is enough space
+       Want to avoid duplicating code from Prn8_str8.
+     */
+
+    ctx->buf[ctx->buf_pos] = '\n';
+    ctx->tabs = abs(ctx->tabs);
+    ctx->buf_pos += 1;
+}
+
+void Prn8_begin_same_line(Prn8 *ctx) {
+    ctx->flags |= MANUAL_NEWLINE;
+}
+void Prn8_end_same_line(Prn8 *ctx) {
+    ctx->flags &= ~MANUAL_NEWLINE;
+    Prn8_newline(ctx);
+}
+
+
+void Prn8_add_tabs(Prn8* ctx, u32 tabs) {
+    ctx->tabs += tabs;
+}
+
+void Prn8_del_tabs(Prn8* ctx, u32 tabs) {
+    ctx->tabs = CLAMPBOTTOM(ctx->tabs-tabs, 0);
+}
+
+void Prn8_end(Prn8* ctx) {
+    Prn8_write_buffer(ctx);
+}
+void Prn8_write_buffer(Prn8* ctx) {
+    printf(ctx->buf);
 }
 
 
