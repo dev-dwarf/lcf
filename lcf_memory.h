@@ -145,6 +145,7 @@ void ArenaSession_end(ArenaSession s);
 
 /** ******************************** **/
 
+/* TODO(lcf): fairly confident we can remove bump allocator. Give arena an option to be fixed size instead? */
 
 /** Bump Allocator
     "Bump" manages a user-provided chunk of memory. Functionality is similar to "Arena",
