@@ -1,16 +1,16 @@
 /** ************************************
-  LCF, Created (September 04, 2022)
+    LCF, Created (September 04, 2022)
 
-  Purpose:
-  Provide ASCII and Unicode strings through str (immutable view), strList (linked-list of str)
-  , and String (advanced builder), all using length-based structs.
-  Integrations with lcf_memory allocators.
-  Lots of string manipulation functionality.
-  Conversion to null-terminated strings for commpatibility.
+    Purpose:
+    Provide ASCII and Unicode strings through str (immutable view), strList (linked-list of str)
+    , and String (advanced builder), all using length-based structs.
+    Integrations with lcf_memory allocators.
+    Lots of string manipulation functionality.
+    Conversion to null-terminated strings for commpatibility.
   
-  Changelog:
+    Changelog:
 
-************************************ **/
+    ************************************ **/
 #if !defined(LCF_STRING)
 #define LCF_STRING "1.0.0"
 
@@ -64,9 +64,7 @@ str8 str8_copy_custom(void* memory, str8 s);
 str8 str8_concat(Arena *a, str8 s1, str8 s2);
 str8 str8_concat_custom(void *memory, str8 s1, str8 s2);
 /* TODO(lcf): variadic/list concat/custom */
-/* TODO(lcf): (maybe) add operations for Bump,
-   alternatively, make functions that take allocator struct. */
-/* We could make a string allocator context?? */
+/* TODO(lcf): (maybe) add operations for Bump */
 
 /* Comparisons / Predicates */
 #define str8_is_empty(s) ((b32)((s).len == 0))
@@ -91,49 +89,66 @@ str8 str8_trim_whitespace_front(str8 s);
 str8 str8_trim_whitespace_back(str8 s);
 
 /* Iterations */
-#define str8_iter_custom(s, i, c)                            \
-    u64 i = 0;                                               \
-    chr8 c = s.str[0];                                      \
-    for (; (i < s.len) && ((c = s.str[i]) || true); i++)
-#define str8_iter(s) str8_iter_custom(s, i, c);
+#define str8_iter_custom(s, i, c)                           \
+    u64 i = 0;                                              \
+    chr8 c = s.str[i];                                      \
+    for (; (i < s.len); i++, c = s.str[i])
 
-/* TODO(lcf): macro for backwards iteration over string */
+#define str8_iter(s) str8_iter_custom(s, i, c)
 
-/* Find the first substring split_by, and return everything before it,
-   advancing src to after the substring. */
-str8 str8_pop_first_split_substring(str8 *src, str8 split_by);
-#define str8_iter_splits_custom(s, split_by, iter)                      \
+#define str8_iter_backward_custom(s, i, c)                  \
+    u64 i = s.len-1;                                        \
+    chr8 c = s.str[i];                                      \
+    for (; (i >= 0); i--, c = s.str[i])
+
+#define str8_iter_backward(s) str8_iter_backward_custom(s, i, c)
+
+/* The idea of these procedures is to search the string for a search_str(substring|delimiter|whitespace),
+   then return the substring before the search_str, as well as advancing src to be past the search_str.
+   
+   Then the macros can be used to lazily iterate over these returned substrings.
+
+   NOTE: for pop_at_first_whitespace src* will be advanced to the next non-whitespace character
+       after the first found whitespace. If this is not what you want use pop_at_first_delimiter
+        with a string of whitespace as the delims.
+*/
+   
+str8 str8_pop_at_first_substring(str8 *src, str8 split_by);
+str8 str8_pop_at_first_delimiter(str8 *src, str8 delims);
+str8 str8_pop_at_first_whitespace(str8 *src);
+
+#define str8_iter_pop_substring_custom(s, split_by, iter)                      \
     for (                                                               \
         str8 MACRO_VAR(_str) = (s),                                     \
             MACRO_VAR(_split_by) = (split_by),                          \
-            iter = str8_pop_first_split_substrings(&MACRO_VAR(_str),MACRO_VAR(_split_by)) \
+            iter = str8_pop_at_first_substrings(&MACRO_VAR(_str),MACRO_VAR(_split_by)) \
             ;                                                           \
         (str_is_empty(MACRO_VAR(_str)) != false)                        \
             ;                                                           \
         iter = str8_pop_first_split(&MACRO_VAR(_str),MACRO_VAR(_split_by)) \
         )
-#define str8_iter_split_substring(s, split_by) str8_iter_split_substring_custom(s, split_by, it)
+#define str8_iter_pop_substring(s, split_by) str8_iter_pop_substring_custom(s, split_by, it)
 
-/* TODO(lcf): split by delimiter, iter split delimiters
-   TODO(lcf): split by whitespace, iter split whitespace
+/* TODO(lcf): iter pop delimiters
+   TODO(lcf): iter pop whitespace
 */
 
 /** Printing and Formatting **/
 #include <stdio.h>
 
 enum lcf_str8FormatFlags { /* ZII for default values TODO(lcf): rename these. */
-    MANUAL_NEWLINE         = 0x1,
-    HEX_LOWERCASE          = 0x2,
-    DISABLE_HEX_PREFIX     = 0x4,
-      DISABLE_OCT_PREFIX   = 0x4,
-    SIGN_ALWAYS            = 0x8,
+    MANUAL_NEWLINE         = 0x01,
+    HEX_LOWERCASE          = 0x02,
+    DISABLE_HEX_PREFIX     = 0x04,
+      DISABLE_OCT_PREFIX   = 0x04,
+    SIGN_ALWAYS            = 0x08,
     LEFT_ALIGN             = 0x10,
     RIGHT_ALIGN_WITH_ZEROS = 0x20,
     BASE_16                = 0x40,
       HEX                  = 0x40,
     BASE_8                 = 0x80,
       OCT                  = 0x80,
-        BASE_64            = 0xC,
+         BASE_64            = 0xC,
 };
 typedef enum lcf_str8FormatFlags str8FormatFlags;
 
@@ -155,7 +170,7 @@ typedef enum lcf_str8FormatFlags str8FormatFlags;
 
    also writing shit to the buffer should be a macro so that we can handle the different modes easily.
 
- */
+*/
 enum lcf_str8OutputType { /* TODO(lcf): rename these */
     STR8_FIXED, /* User passes fixed size str8. Truncates once size is reached. */
     STR8_ARENA, /* User passes Arena. buf grows to fit data. output str is {buf_len, buf} */
@@ -177,7 +192,7 @@ struct lcf_str8PrintContext {
         str8* str;
     } out;
 
-    #ifdef __cplusplus
+#ifdef __cplusplus
     void str(str8 s);
     void lit(char* literal);
     void newline();
@@ -186,26 +201,26 @@ struct lcf_str8PrintContext {
 
     void u64(u64 u);
     
-    #endif
+#endif
 };
 typedef struct lcf_str8PrintContext Prn8;
 
 /* TODO(lcf): immediate-mode style string formating.
-    * "print" primitives from lcf_types.h to string.
-    * print strings into other strings.
-    * print to output streams (stdout, stderr, etc)
-    * print string repeated n times
-    * add_tab, end_tab (all strings afterward will be tabbed)
-    * ^ for above maybe need print context struct?
-    * print context could also determine if we are printing to a buffer, or output stream.
+ * "print" primitives from lcf_types.h to string.
+ * print strings into other strings.
+ * print to output streams (stdout, stderr, etc)
+ * print string repeated n times
+ * add_tab, end_tab (all strings afterward will be tabbed)
+ * ^ for above maybe need print context struct?
+ * print context could also determine if we are printing to a buffer, or output stream.
 
-    printf kinda sucks, why would we want an "interpreted-mode" api for something
-    as basic as printing strings? stop embedding weird micro langs into subsystems.
+ printf kinda sucks, why would we want an "interpreted-mode" api for something
+ as basic as printing strings? stop embedding weird micro langs into subsystems.
 
-    TODO(lcf): context mode for accumulating size;
-    Usecase: allow same immediate-mode calls to be made to discover the required size,
-    as you would use to actually perform the formatting, toggled by a flag in context.
- */
+ TODO(lcf): context mode for accumulating size;
+ Usecase: allow same immediate-mode calls to be made to discover the required size,
+ as you would use to actually perform the formatting, toggled by a flag in context.
+*/
 /* Create Prn8 Contexts */
 Prn8 Prn8_create_stdout(u32 buf_len, chr8* buf);
 
@@ -213,7 +228,7 @@ Prn8 Prn8_create_stdout(u32 buf_len, chr8* buf);
 
    Relevant Prn8 flags:
    * MANUAL_NEWLINE - User must manually write newlines (default is a newline after each _str8 or _lit proc call).
- */
+   */
 void Prn8_str8(Prn8* ctx, str8 s);
 #define Prn8_lit(ctx, lit) Prn8_str8(ctx, str8_lit(lit))
 void Prn8_newline(Prn8* ctx);
@@ -232,7 +247,7 @@ void Prn8_newline(Prn8* ctx);
    * HEX | BASE_16 - Use base 16 / hex to print. Prints signed numbers as their raw two's complement representation.
    * OCT | BASE_8 - Use base 8 / octal to print. Prints signed numbers as their raw two's complement representation.
    * BASE_64 - Use base 64 to print. WARN TODO(lcf): base 64 not supported yet.
- */
+   */
 
 void Prn8_i64(Prn8 *ctx, i64 s);
 void Prn8_i32(Prn8 *ctx, i32 s);

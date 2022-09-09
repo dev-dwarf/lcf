@@ -230,7 +230,7 @@ str8 str8_trim_whitespace_back(str8 s) {
     return s;
 }
 
-str8 str8_pop_first_split_substring(str8 *src, str8 split_by) {
+str8 str8_pop_at_first_substring(str8 *src, str8 split_by) {
     str8 s = *src;
     u64 match = str8_substring_location(s, split_by);
     if (match == LCF_STRING_NO_MATCH) {
