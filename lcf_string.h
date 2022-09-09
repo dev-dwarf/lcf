@@ -120,27 +120,48 @@ str8 str8_pop_first_split_substring(str8 *src, str8 split_by);
 
 /** Printing and Formatting **/
 #include <stdio.h>
+
+enum lcf_str8FormatFlags { /* ZII for default values TODO(lcf): rename these. */
+    MANUAL_NEWLINE         = 0x1,
+    HEX_LOWERCASE          = 0x2,
+    DISABLE_HEX_PREFIX     = 0x4,
+      DISABLE_OCT_PREFIX   = 0x4,
+    SIGN_ALWAYS            = 0x8,
+    LEFT_ALIGN             = 0x10,
+    RIGHT_ALIGN_WITH_ZEROS = 0x20,
+    BASE_16                = 0x40,
+      HEX                  = 0x40,
+    BASE_8                 = 0x80,
+      OCT                  = 0x80,
+        BASE_64            = 0xC,
+};
+typedef enum lcf_str8FormatFlags str8FormatFlags;
+
+/* TODO: WARN: This struct and enum sucks... Need something simpler here.
+   want do I actually want to be able to do??
+
+   buffer modes:
+   * fixed (Bump), truncates / writes to file immediately and maybe warns when out of space.
+   * grow (Arena).
+
+   output types:
+   * str8, output a str8 containing the buffer memory and size.
+   * FILE, output the string to a file.
+
+   file output mode uses the buffer as an intermediary and then writes to file whenever out of space or as user
+   requests it.
+
+   str8 output mode will eventually just return its buffer as the str8 so nothing too special is needed.
+
+   also writing shit to the buffer should be a macro so that we can handle the different modes easily.
+
+ */
 enum lcf_str8OutputType { /* TODO(lcf): rename these */
     STR8_FIXED, /* User passes fixed size str8. Truncates once size is reached. */
     STR8_ARENA, /* User passes Arena. buf grows to fit data. output str is {buf_len, buf} */
     STDIO_FILE /* Output to FILE stream. */
 };
 typedef enum lcf_str8OutputType str8OutputType;
-enum lcf_str8FormatFlags { /* ZII for default values TODO(lcf): rename these. */
-    MANUAL_NEWLINE = 0x1, /* Disable newline after every call */
-    HEX_LOWERCASE = 0x2,
-    DISABLE_HEX_PREFIX = 0x4,
-    DISABLE_OCT_PREFIX = 0x4,
-    SIGN_ALWAYS = 0x8, /* Always print +|- for signed values */
-    LEFT_ALIGN = 0x10,
-    LEFT_PAD_WITH_ZEROS = 0x20,
-    BASE_16 = 0x40,
-    HEX = 0x40,
-    BASE_8 = 0x80,
-    OCT = 0x80,
-    BASE_64 = 0xC,
-};
-typedef enum lcf_str8FormatFlags str8FormatFlags;
 struct lcf_str8PrintContext {
     /* Format info */
     u32 flags; 
@@ -162,9 +183,11 @@ struct lcf_str8PrintContext {
     void newline();
     void begin_same_line();
     void end_same_line();
+
+    void u64(u64 u);
+    
     #endif
 };
-/* TODO(lcf): redo naming scheme to allow for shorter name than this. */
 typedef struct lcf_str8PrintContext Prn8;
 
 /* TODO(lcf): immediate-mode style string formating.
@@ -186,20 +209,51 @@ typedef struct lcf_str8PrintContext Prn8;
 /* Create Prn8 Contexts */
 Prn8 Prn8_create_stdout(u32 buf_len, chr8* buf);
 
-/* Format strings */
+/* Format strings
+
+   Relevant Prn8 flags:
+   * MANUAL_NEWLINE - User must manually write newlines (default is a newline after each _str8 or _lit proc call).
+ */
 void Prn8_str8(Prn8* ctx, str8 s);
 #define Prn8_lit(ctx, lit) Prn8_str8(ctx, str8_lit(lit))
 void Prn8_newline(Prn8* ctx);
 
-/* Format primitive types */
-/* TODO: should base (2, 10, 16) be an option or a flag in context? */
-void Prn8_i64_custom(Prn8 *ctx, i64 s, u16 digits);
-/* TODO: i64, i32, i16, i8 */
-void Prn8_u64_custom(Prn8 *ctx, u64 s, u16 digits);
-/* TODO: u64, u32, u16, u8 */
+/* Format primitive types
+   Prn8_(i|u)XX procs default to printing a minimum of one character, ie. 0, 1, 10, 100, etc.
+   You can specifiy a different minimum number of characters using the _custom procs.
+   You can control what characters are printed using the flags.
+   
+   Relevant Prn8 flags:
+   * HEX_LOWERCASE - If formatting as hex use lowercase (default is uppercase) for a-f digits.
+   * DISABLE_HEX_PREFIX | DISABLE_OCT_PREFIX - Disable the 0x or 0 prefix for hex or octal numbers respectively.
+   * SIGN_ALWAYS - Always print the sign of signed values (default is only for neg. numbers).
+   * LEFT_ALIGN - Align left based on width. Ex(width=4): "1    10   100  1000" vs default "   1   10  100 1000".
+   * RIGHT_ALIGN_WITH_ZEROS - Use zeros instead of spaces to right-align. Ex(width = 4): "0001 0010 0100 1000".
+   * HEX | BASE_16 - Use base 16 / hex to print. Prints signed numbers as their raw two's complement representation.
+   * OCT | BASE_8 - Use base 8 / octal to print. Prints signed numbers as their raw two's complement representation.
+   * BASE_64 - Use base 64 to print. WARN TODO(lcf): base 64 not supported yet.
+ */
+
+void Prn8_i64(Prn8 *ctx, i64 s);
+void Prn8_i32(Prn8 *ctx, i32 s);
+void Prn8_i16(Prn8 *ctx, i16 s);
+void Prn8_i8(Prn8 *ctx, i8 s);
+void Prn8_u64(Prn8 *ctx, u64 u);
+void Prn8_u32(Prn8 *ctx, u32 u);
+void Prn8_u16(Prn8 *ctx, u16 u);
+void Prn8_u8(Prn8 *ctx, u8 u);
+void Prn8_i64_custom(Prn8 *ctx, i64 s, u16 width);
+void Prn8_i32_custom(Prn8 *ctx, i32 s, u16 width);
+void Prn8_i16_custom(Prn8 *ctx, i16 s, u16 width);
+void Prn8_i8_custom(Prn8 *ctx, i8 s, u16 width);
+void Prn8_u64_custom(Prn8 *ctx, u64 u, u16 width);
+void Prn8_u32_custom(Prn8 *ctx, u32 u, u16 width);
+void Prn8_u16_custom(Prn8 *ctx, u16 u, u16 width);
+void Prn8_u8_custom(Prn8 *ctx, u8 u, u16 width);
+/* TODO: print arrays of the above ^ */
 
 /* TODO: f32, f64 */
-/* Study options available in printf to understand what capabilities we need for floats */
+/* NOTE: Study options available in printf to understand what capabilities we need for floats */
 
 /* Immediate-Mode formatting regions */
 void Prn8_begin_same_line(Prn8 *ctx);
@@ -210,7 +264,8 @@ void Prn8_del_tabs(Prn8* ctx, i32 tabs);
 #define Prn8_begin_tab(ctx) Prn8_add_tabs(ctx, 1);
 #define Prn8_end_tab(ctx) Prn8_del_tabs(ctx, 1);
 
-/* Scanning / Parsing */
+/** Scanning / Parsing **/
+/* TODO(lcf) */
 
 /** ******************************** **/
 

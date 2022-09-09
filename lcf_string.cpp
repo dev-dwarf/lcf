@@ -259,26 +259,42 @@ Prn8 Prn8_create_stdout(u32 buf_len, chr8* buf) {
     return p;
 }
 
+
+#define Prn8_MAKE_SPACE_FOR_TABS_AND_AUTO_NEWLINE()                     \
+    b32 auto_newline = (ctx->flags & MANUAL_NEWLINE) == 0;              \
+    i32 tabs = ctx->tabs;                                               \
+                                                                        \
+    if (auto_newline) {                                                 \
+        len_to_write += 1; /* Need extra char to write newline */       \
+        len_to_write += tabs; /* Always need space for tabs when doing newlines too. */ \
+    }                                                                   \
+                                                                        \
+    if (!auto_newline && (tabs > 0)) {                                  \
+        len_to_write += tabs;                                           \
+        ctx->tabs = -tabs; /* Negative tabs means already written for this line */ \
+    }
+
+#define Prn8_INSERT_TABS()                      \
+    if (tabs > 0) {                             \
+        memset(ctx->buf+pos, '\t', (u32) tabs); \
+        pos += tabs;                            \
+    }                                           
+
+#define Prn8_INSERT_AUTO_NEWLINE()              \
+    if (!(ctx->flags & MANUAL_NEWLINE)) {       \
+        ctx->buf[pos] = '\n';                   \
+        pos += 1;                               \
+    } 
+
 /* Format strings */
 void Prn8_str8(Prn8* ctx, str8 s) {
     /* TODO: handle s.len > u32_MAX */
     ASSERT(s.len <= u32_MAX);
     
     /* Check if buffer has enough space */
-    i32 tabs = ctx->tabs;
     u64 len_to_write = s.len;
-    b32 auto_newline = (ctx->flags & MANUAL_NEWLINE) == 0;
-
-    if (auto_newline) {
-        len_to_write += 1; /* Need extra char to write newline */
-        len_to_write += tabs; /* Always need space for tabs when doing newlines too. */
-    }
-
-    /* Negative tabs means already written for this line */
-    if (!auto_newline && (tabs > 0)) { 
-        len_to_write += tabs;
-        ctx->tabs = -tabs;
-    }
+    
+    Prn8_MAKE_SPACE_FOR_TABS_AND_AUTO_NEWLINE();
     
     if (ctx->buf_pos+len_to_write >= ctx->buf_len) {
         // Flush buffer??
@@ -287,17 +303,13 @@ void Prn8_str8(Prn8* ctx, str8 s) {
 
     /* Assume ctx valid */
     u32 pos = ctx->buf_pos;
-    if (tabs > 0) {
-        memset(ctx->buf+pos, '\t', (u32) tabs);
-        pos += tabs;
-    }
+
+    Prn8_INSERT_TABS();
+    
     memcpy(ctx->buf + pos, s.str, s.len);
     pos += (u32) s.len;
     
-    if (!(ctx->flags & MANUAL_NEWLINE)) {
-        ctx->buf[pos] = '\n';
-        pos += 1;
-    }
+    Prn8_INSERT_AUTO_NEWLINE();
 
     ASSERT(ctx->buf_pos+len_to_write == pos);
     ctx->buf_pos = pos;
@@ -316,12 +328,15 @@ void Prn8_newline(Prn8* ctx) {
     ctx->buf_pos += 1;
 }
 
-
 /* Format primitive types */
 /* TODO(lcf): compress i64_custom and u64_custom to reduce duplication. */
 /* TODO(lcf): also create i64, i32, i16, i8, u64, u32, u16, u8 */
 /* TODO(lcf): floating point (oh christ). */
-void Prn8_i64_custom(Prn8 *ctx, i64 s, u16 digits, u16 size) {
+union integer64 {
+    i64 i;
+    u64 u;
+};
+internal inline void Prn8_integer_custom(Prn8 *ctx, union integer64 in, u16 width, u16 size, b16 is_signed) {
     static chr8 signsym[] = "+-";
     static chr8 decimal[] = "0123456789";
     static chr8 hex[] = "0123456789abcdefxp";
@@ -333,7 +348,7 @@ void Prn8_i64_custom(Prn8 *ctx, i64 s, u16 digits, u16 size) {
     #define Prn8_i64_custom_INTERNAL_BUF_SIZE 32
     chr8 internal_buf[Prn8_i64_custom_INTERNAL_BUF_SIZE];
 
-    ASSERT(digits < 28);
+    ASSERT(width < 28);
     
     u32 flags = ctx->flags;
     
@@ -344,19 +359,17 @@ void Prn8_i64_custom(Prn8 *ctx, i64 s, u16 digits, u16 size) {
     u64 b = base[base_16+2*base_8];
     u64 b_digits = base_bits_per_char[base_16+2*base_8];
 
-    b32 neg = s < 0;
     u64 u;
-
-    if (b == 10) {
-        u = (u64)(neg? -s : s);
+    b32 neg = 0;
+    if (is_signed) {
+        if (b == 10) {
+            neg = in.i < 0;
+            u = (u64)(neg? -in.i : in.i);
+        } else {
+            u = in.u;
+        }
     } else {
-        union converter {
-            u64 u;
-            i64 s;
-        };
-        union converter conv;
-        conv.s = s;
-        u = conv.u;
+        u = in.u;
     }
     
     u64 needed_digits = 0;
@@ -377,21 +390,23 @@ void Prn8_i64_custom(Prn8 *ctx, i64 s, u16 digits, u16 size) {
         u /= b;
     }
 
-    b32 align_zeros = (flags & LEFT_PAD_WITH_ZEROS) > 0;
+    b32 align_zeros = (flags & RIGHT_ALIGN_WITH_ZEROS) > 0;
     if (align_zeros) {
-        for (; digits > needed_digits; digits--) {
+        for (; width > needed_digits; width--) {
             internal_buf[internal_buf_pos--] = '0';
         }
     }
 
-    /* Use minimum passed in digits value */
-    u64 len_to_write = CLAMPBOTTOM(needed_digits, digits);
+    /* Use minimum passed in width value */
+    u64 len_to_write = CLAMPBOTTOM(needed_digits, width);
 
     /* Make space for sign bit */
-    b32 sign_always = (flags & SIGN_ALWAYS) > 0;
-    if (b == 10 && (sign_always || neg)) {
-        len_to_write += 1; /* char for sign bit */
-        internal_buf[internal_buf_pos--] = signsym[neg];
+    if (is_signed) {
+        b32 sign_always = (flags & SIGN_ALWAYS) > 0;
+        if (b == 10 && (sign_always || neg)) {
+            len_to_write += 1; /* char for sign bit */
+            internal_buf[internal_buf_pos--] = signsym[neg];
+        }
     }
 
     /* Octal and Hex prefixes */
@@ -407,17 +422,23 @@ void Prn8_i64_custom(Prn8 *ctx, i64 s, u16 digits, u16 size) {
         }
     }
 
+    Prn8_MAKE_SPACE_FOR_TABS_AND_AUTO_NEWLINE();
+    
     if (ctx->buf_pos+len_to_write >= ctx->buf_len) {
         // Flush buffer??
         // TODO: handle buffer out of memory
     }
-    
+
+
     /* Assume we have enough space */
     u32 pos = ctx->buf_pos;
+
+    Prn8_INSERT_TABS();
+    
     b32 left_align = (flags & LEFT_ALIGN) > 0;
     /* Write to ctx buffer with padding*/
     if (!align_zeros && !left_align) {
-        for (; digits > needed_digits; digits--) {
+        for (; width > needed_digits; width--) {
             ctx->buf[pos++] = ' ';
         }
     }
@@ -430,110 +451,54 @@ void Prn8_i64_custom(Prn8 *ctx, i64 s, u16 digits, u16 size) {
     }
 
     if (!align_zeros && left_align) {
-        for (; digits > needed_digits; digits--) {
+        for (; width > needed_digits; width--) {
             ctx->buf[pos++] = ' ';
         }
     }
+
+    Prn8_INSERT_AUTO_NEWLINE();
     
     ASSERT(ctx->buf_pos+len_to_write == pos);
     ctx->buf_pos = pos;
 }
 
-void Prn8_u64_custom(Prn8 *ctx, u64 u, u16 digits, u16 size) {
-    static chr8 signsym[] = "+-";
-    static chr8 decimal[] = "0123456789";
-    static chr8 hex[] = "0123456789abcdefxp";
-    static chr8 hexu[] = "0123456789ABCDEFXP";
-    static u64 base[] = {10, 16, 8, 64};
-    static u64 base_bits_per_char[] = {3, 4, 3, 6};
-
-    #define Prn8_i64_custom_INTERNAL_BUF_SIZE 32
-    chr8 internal_buf[Prn8_i64_custom_INTERNAL_BUF_SIZE];
-
-    ASSERT(digits < 28);
-    
-    u32 flags = ctx->flags;
-    
-    /* Count digits needed */
-    b32 hex_lowercase = (flags & HEX_LOWERCASE) > 0;
-    b32 base_8 = (flags & BASE_8) > 0;
-    b32 base_16 = ((flags & BASE_16) > 0);
-    u64 b = base[base_16+2*base_8];
-    u64 b_digits = base_bits_per_char[base_16+2*base_8];
-
-    u64 needed_digits = 0;
-    u32 internal_buf_pos = Prn8_i64_custom_INTERNAL_BUF_SIZE;
-    for (;;) {
-        internal_buf_pos--;
-
-        if (u <= 0 || needed_digits > size/(b_digits)) {
-            break;
-        }
-
-        needed_digits += 1;
-        if (b == 16) {
-            internal_buf[internal_buf_pos] = hex_lowercase? hex[u % 16] : hexu[u % 16];
-        } else {
-            internal_buf[internal_buf_pos] = decimal[u % b];
-        }
-        u /= b;
+#define DEFINE_Prn8_SIGNED(bits)                                    \
+    void Prn8_i##bits##_custom(Prn8 *ctx, i##bits i, u16 width) {   \
+        union integer64 in;                                         \
+        in.i = i;                                                   \
+        Prn8_integer_custom(ctx, in, width, bits, true);            \
+    }                                                               \
+    void Prn8_i##bits(Prn8 *ctx, i##bits i) {              \
+        union integer64 in;                                         \
+        in.i = i;                                                   \
+        Prn8_integer_custom(ctx, in, 1, bits, true);                \
     }
 
-    b32 align_zeros = (flags & LEFT_PAD_WITH_ZEROS) > 0;
-    if (align_zeros) {
-        for (; digits > needed_digits; digits--) {
-            internal_buf[internal_buf_pos--] = '0';
-        }
+DEFINE_Prn8_SIGNED(8);
+DEFINE_Prn8_SIGNED(16);
+DEFINE_Prn8_SIGNED(32);
+DEFINE_Prn8_SIGNED(64);
+
+#undef DEFINE_Prn8_SIGNED
+
+#define DEFINE_Prn8_UNSIGNED(bits)                                  \
+    void Prn8_u##bits##_custom(Prn8 *ctx, u##bits u, u16 width) {   \
+        union integer64 in;                                         \
+        in.u = u;                                                   \
+        Prn8_integer_custom(ctx, in, width, bits, false);           \
+    }                                                               \
+    void Prn8_u##bits(Prn8 *ctx, u##bits u) {              \
+        union integer64 in;                                         \
+        in.u = u;                                                   \
+        Prn8_integer_custom(ctx, in, 1, bits, false);               \
     }
 
-    /* Use minimum passed in digits value */
-    u64 len_to_write = CLAMPBOTTOM(needed_digits, digits);
+DEFINE_Prn8_UNSIGNED(8);
+DEFINE_Prn8_UNSIGNED(16);
+DEFINE_Prn8_UNSIGNED(32);
+DEFINE_Prn8_UNSIGNED(64);
 
-    /* Octal and Hex prefixes */
-    if (!((flags & DISABLE_HEX_PREFIX) > 0)) {
-        if (b == 16) {
-            len_to_write += 2;
-            internal_buf[internal_buf_pos--] = 'x';
-            internal_buf[internal_buf_pos--] = '0';
-        }
-        if (b == 8) {
-            len_to_write += 1;
-            internal_buf[internal_buf_pos--] = 'o';
-        }
-    }
-
-    if (ctx->buf_pos+len_to_write >= ctx->buf_len) {
-        // Flush buffer??
-        // TODO: handle buffer out of memory
-    }
-    
-    /* Assume we have enough space */
-    u32 pos = ctx->buf_pos;
-    b32 left_align = (flags & LEFT_ALIGN) > 0;
-    /* Write to ctx buffer with padding*/
-    if (!align_zeros && !left_align) {
-        for (; digits > needed_digits; digits--) {
-            ctx->buf[pos++] = ' ';
-        }
-    }
-
-    internal_buf_pos++;
-    for (; internal_buf_pos < Prn8_i64_custom_INTERNAL_BUF_SIZE; ) {
-        ctx->buf[pos] = internal_buf[internal_buf_pos];
-        internal_buf_pos++;
-        pos++;
-    }
-
-    if (!align_zeros && left_align) {
-        for (; digits > needed_digits; digits--) {
-            ctx->buf[pos++] = ' ';
-        }
-    }
-    
-    ASSERT(ctx->buf_pos+len_to_write == pos);
-    ctx->buf_pos = pos;
-}
-
+#undef DEFINE_Prn8_UNSIGNED
 
 /* Immediate-Mode formatting regions */
 void Prn8_begin_same_line(Prn8 *ctx) {

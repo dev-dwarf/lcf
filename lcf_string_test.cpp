@@ -17,7 +17,7 @@ int main(int argn, char** argv) {
     /* TODO(lcf): lets make macros for some of these things to make things feel more
        convenient. */
     ctx = Prn8_create_stdout(buf_len, buf);
-    ctx.flags |= SIGN_ALWAYS | LEFT_PAD_WITH_ZEROS | HEX;
+    ctx.flags |= SIGN_ALWAYS | RIGHT_ALIGN_WITH_ZEROS | HEX;
     Prn8_lit(&ctx, "Testing Indentation...");
     Prn8_begin_tab(&ctx);
     Prn8_lit(&ctx, "Tabbed region!");
@@ -26,19 +26,21 @@ int main(int argn, char** argv) {
     Prn8_begin_same_line(&ctx);
     Prn8_lit(&ctx, "Same ");
     Prn8_lit(&ctx, "Line ");
-    Prn8_i64_custom(&ctx, -128, 2, 32); Prn8_lit(&ctx, " ");
-    Prn8_i64_custom(&ctx, -16, 2, 64); Prn8_lit(&ctx, " ");
-    Prn8_i64_custom(&ctx, -1, 2, 64);Prn8_lit(&ctx, " ");
-    Prn8_i64_custom(&ctx, 0, 2, 64);Prn8_lit(&ctx, " ");
-    Prn8_i64_custom(&ctx, 1, 2, 64);Prn8_lit(&ctx, " ");
-    Prn8_i64_custom(&ctx, 16, 2, 64);Prn8_lit(&ctx, " ");
-    Prn8_u64_custom(&ctx, u64_MAX, 2, 64);Prn8_lit(&ctx, " ");
-    Prn8_i64_custom(&ctx, 128, 2, 64);
+    Prn8_i64_custom(&ctx, -128, 2); Prn8_lit(&ctx, " ");
+    Prn8_i64_custom(&ctx, -16, 2); Prn8_lit(&ctx, " ");
+    Prn8_i64_custom(&ctx, -1, 2);Prn8_lit(&ctx, " ");
+    Prn8_i64(&ctx, 0);Prn8_lit(&ctx, " ");
+    Prn8_u64_custom(&ctx, 1, 2);Prn8_lit(&ctx, " ");
+    Prn8_u64_custom(&ctx, 16, 2);Prn8_lit(&ctx, " ");
+    Prn8_u64_custom(&ctx, u64_MAX, 2);Prn8_lit(&ctx, " ");
+    Prn8_u64_custom(&ctx, 128, 2);
     
     Prn8_end_same_line(&ctx);
     Prn8_del_tabs(&ctx, 3);
     Prn8_lit(&ctx, "End of tabbed region.");
-    Prn8_end_tab(&ctx);
+    Prn8_i64_custom(&ctx, -128, 2);
+    Prn8_i64_custom(&ctx, 1, 2); 
+    Prn8_i64(&ctx, 256);
     Prn8_lit(&ctx, "End of indentation test.");
 
     Prn8_end(&ctx);
