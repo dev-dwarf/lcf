@@ -64,7 +64,6 @@ str8 str8_copy_custom(void* memory, str8 s);
 str8 str8_concat(Arena *a, str8 s1, str8 s2);
 str8 str8_concat_custom(void *memory, str8 s1, str8 s2);
 /* TODO(lcf): variadic/list concat/custom */
-/* TODO(lcf): (maybe) add operations for Bump */
 
 /* Comparisons / Predicates */
 #define str8_is_empty(s) ((b32)((s).len == 0))
@@ -117,7 +116,7 @@ str8 str8_pop_at_first_substring(str8 *src, str8 split_by);
 str8 str8_pop_at_first_delimiter(str8 *src, str8 delims);
 str8 str8_pop_at_first_whitespace(str8 *src);
 
-#define str8_iter_pop_substring_custom(s, split_by, iter)                      \
+#define str8_iter_pop_substring_custom(s, split_by, iter)               \
     for (                                                               \
         str8 MACRO_VAR(_str) = (s),                                     \
             MACRO_VAR(_split_by) = (split_by),                          \
@@ -148,51 +147,37 @@ enum lcf_str8FormatFlags { /* ZII for default values TODO(lcf): rename these. */
       HEX                  = 0x40,
     BASE_8                 = 0x80,
       OCT                  = 0x80,
-         BASE_64            = 0xC,
+         BASE_64           = 0xC0,
+
+    OUTPUT_FILE            = 0x8000,
 };
 typedef enum lcf_str8FormatFlags str8FormatFlags;
 
 /* TODO: WARN: This struct and enum sucks... Need something simpler here.
    want do I actually want to be able to do??
 
-   buffer modes:
-   * fixed (Bump), truncates / writes to file immediately and maybe warns when out of space.
-   * grow (Arena).
-
    output types:
    * str8, output a str8 containing the buffer memory and size.
    * FILE, output the string to a file.
 
-   file output mode uses the buffer as an intermediary and then writes to file whenever out of space or as user
-   requests it.
+   file output mode uses the buffer as an intermediary and then writes to file whenever out of space or as user requests it.
 
    str8 output mode will eventually just return its buffer as the str8 so nothing too special is needed.
 
    also writing shit to the buffer should be a macro so that we can handle the different modes easily.
 
 */
-enum lcf_str8OutputType { /* TODO(lcf): rename these */
-    STR8_FIXED, /* User passes fixed size str8. Truncates once size is reached. */
-    STR8_ARENA, /* User passes Arena. buf grows to fit data. output str is {buf_len, buf} */
-    STDIO_FILE /* Output to FILE stream. */
-};
-typedef enum lcf_str8OutputType str8OutputType;
 struct lcf_str8PrintContext {
     /* Format info */
     u32 flags; 
     i32 tabs; /* TODO(lcf): what else could go here? */
     /* Internal buffer */
-    u32 buf_len; 
-    u32 buf_pos;
-    chr8* buf;
+    Arena arena;
     /* Output */
-    str8OutputType output_type;
-    union out {
-        FILE* file;
-        str8* str;
-    } out;
+    FILE* file;
 
 #ifdef __cplusplus
+    /* TODO: c++ style api for string formatting. */
     void str(str8 s);
     void lit(char* literal);
     void newline();
@@ -222,7 +207,8 @@ typedef struct lcf_str8PrintContext Prn8;
  as you would use to actually perform the formatting, toggled by a flag in context.
 */
 /* Create Prn8 Contexts */
-Prn8 Prn8_create_stdout(u32 buf_len, chr8* buf);
+/* TODO */
+
 
 /* Format strings
 
@@ -267,8 +253,10 @@ void Prn8_u16_custom(Prn8 *ctx, u16 u, u16 width);
 void Prn8_u8_custom(Prn8 *ctx, u8 u, u16 width);
 /* TODO: print arrays of the above ^ */
 
-/* TODO: f32, f64 */
-/* NOTE: Study options available in printf to understand what capabilities we need for floats */
+/* TODO: f16, f32, f64 */
+/* NOTE: Study options available in printf to understand what capabilities we need for floats
+ * Also IEEE 754 standard for roundtripping when printing.
+ */
 
 /* Immediate-Mode formatting regions */
 void Prn8_begin_same_line(Prn8 *ctx);
@@ -286,6 +274,6 @@ void Prn8_del_tabs(Prn8* ctx, i32 tabs);
 
 
 /** Unicode                          **/
-// TODO(lcf)
+/* TODO(lcf) */
 /** ******************************** **/
 #endif

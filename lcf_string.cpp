@@ -249,16 +249,25 @@ str8 str8_pop_at_first_substring(str8 *src, str8 split_by) {
 /* TODO: remove dependency on sprintf, replace with custom formatting */
 #include <stdio.h>
 
-Prn8 Prn8_create_stdout(u32 buf_len, chr8* buf) {
-    Prn8 p = { 0 };
-    p.buf_len = buf_len;
-    p.buf = buf;
-    p.output_type = STDIO_FILE;
-    p.out.file = stdout;
-    memset(buf, 0, buf_len);
+Prn8 Prn8_create(u32 flags) {
+    Prn8 p = {0};
+    p.arena = Arena_create_default();
+    p.flags = flags;
     return p;
 }
 
+Prn8 Prn8_create_size(u32 flags, u64 size) {
+    Prn8 p = {0};
+    p.arena = Arena_create(size);
+    p.flags = flags;
+    return p;
+}
+
+Prn8 Prn8_set_output_file(Prn8 p, FILE* file) {
+    p.flags |= OUTPUT_FILE;
+    p.file = file;
+    return p;
+}
 
 #define Prn8_MAKE_SPACE_FOR_TABS_AND_AUTO_NEWLINE()                     \
     b32 auto_newline = (ctx->flags & MANUAL_NEWLINE) == 0;              \
@@ -276,15 +285,28 @@ Prn8 Prn8_create_stdout(u32 buf_len, chr8* buf) {
 
 #define Prn8_INSERT_TABS()                      \
     if (tabs > 0) {                             \
-        memset(ctx->buf+pos, '\t', (u32) tabs); \
+        memset(head+pos, '\t', (u32) tabs); \
         pos += tabs;                            \
     }                                           
 
 #define Prn8_INSERT_AUTO_NEWLINE()              \
     if (!(ctx->flags & MANUAL_NEWLINE)) {       \
-        ctx->buf[pos] = '\n';                   \
+        *(head+pos) = '\n';                     \
         pos += 1;                               \
-    } 
+    }
+
+internal chr8* Prn8_get_space_for_str8(Prn8* ctx, u64 len) {
+    void* head = NULL;
+
+    ASSERT(ctx->arena != NULL && "Prn8 Arena is null! Must init with a valid Arena");
+    
+    head = Arena_take_custom(&ctx->arena, len, 1);
+     /* TODO handle null
+        if output mode is file try to write out to file and reset the buffer.
+     */
+
+    return (chr8*) head;
+}
 
 /* Format strings */
 void Prn8_str8(Prn8* ctx, str8 s) {
@@ -295,42 +317,36 @@ void Prn8_str8(Prn8* ctx, str8 s) {
     u64 len_to_write = s.len;
     
     Prn8_MAKE_SPACE_FOR_TABS_AND_AUTO_NEWLINE();
-    
-    if (ctx->buf_pos+len_to_write >= ctx->buf_len) {
-        // Flush buffer??
-        // TODO: handle buffer out of memory
-    }
 
+    /* Allocate needed space from ctx, 1 byte aligned. */
+    chr8 *head = Prn8_get_space_for_str8(ctx, len_to_write);
+    if (head == NULL) {
+        return; 
+    }
+    
     /* Assume ctx valid */
-    u32 pos = ctx->buf_pos;
+    u32 pos = 0;
 
     Prn8_INSERT_TABS();
     
-    memcpy(ctx->buf + pos, s.str, s.len);
+    memcpy(head + pos, s.str, s.len);
     pos += (u32) s.len;
     
     Prn8_INSERT_AUTO_NEWLINE();
 
-    ASSERT(ctx->buf_pos+len_to_write == pos);
-    ctx->buf_pos = pos;
+    ASSERT(len_to_write == pos);
 }
 
 void Prn8_newline(Prn8* ctx) {
-    /* TODO: check that there is enough space
-       Want to avoid duplicating code from Prn8_str8.
-     */
-    if (ctx->buf_pos+1 >= ctx->buf_len) {
-        // TODO: handle buffer out of memory    
+    chr8 *head = Prn8_get_space_for_str8(ctx, 1);
+    if (head == NULL) {
+        return; 
     }
-
-    ctx->buf[ctx->buf_pos] = '\n';
+    *head = '\n';
     ctx->tabs = abs(ctx->tabs);
-    ctx->buf_pos += 1;
 }
 
 /* Format primitive types */
-/* TODO(lcf): compress i64_custom and u64_custom to reduce duplication. */
-/* TODO(lcf): also create i64, i32, i16, i8, u64, u32, u16, u8 */
 /* TODO(lcf): floating point (oh christ). */
 union integer64 {
     i64 i;
@@ -345,8 +361,8 @@ internal inline void Prn8_integer_custom(Prn8 *ctx, union integer64 in, u16 widt
     static u64 base_bits_per_char[] = {3, 4, 3, 6};
 
     /* log8(i64_MAX) < 32, so plenty of space for bases 8, 10 and 16. */
-    #define Prn8_i64_custom_INTERNAL_BUF_SIZE 32
-    chr8 internal_buf[Prn8_i64_custom_INTERNAL_BUF_SIZE];
+    #define Prn8_integer_custom_INTERNAL_BUF_SIZE 32
+    chr8 internal_buf[Prn8_integer_custom_INTERNAL_BUF_SIZE];
 
     ASSERT(width < 28);
     
@@ -373,7 +389,7 @@ internal inline void Prn8_integer_custom(Prn8 *ctx, union integer64 in, u16 widt
     }
     
     u64 needed_digits = 0;
-    u32 internal_buf_pos = Prn8_i64_custom_INTERNAL_BUF_SIZE;
+    u32 internal_buf_pos = Prn8_integer_custom_INTERNAL_BUF_SIZE;
     for (;;) {
         internal_buf_pos--;
 
@@ -423,15 +439,14 @@ internal inline void Prn8_integer_custom(Prn8 *ctx, union integer64 in, u16 widt
     }
 
     Prn8_MAKE_SPACE_FOR_TABS_AND_AUTO_NEWLINE();
-    
-    if (ctx->buf_pos+len_to_write >= ctx->buf_len) {
-        // Flush buffer??
-        // TODO: handle buffer out of memory
+
+    chr8 *head = Prn8_get_space_for_str8(ctx, len_to_write);
+    if (head == NULL) {
+        return; 
     }
 
-
     /* Assume we have enough space */
-    u32 pos = ctx->buf_pos;
+    u32 pos = 0;
 
     Prn8_INSERT_TABS();
     
@@ -439,27 +454,26 @@ internal inline void Prn8_integer_custom(Prn8 *ctx, union integer64 in, u16 widt
     /* Write to ctx buffer with padding*/
     if (!align_zeros && !left_align) {
         for (; width > needed_digits; width--) {
-            ctx->buf[pos++] = ' ';
+            head[pos++] = ' ';
         }
     }
 
     internal_buf_pos++;
-    for (; internal_buf_pos < Prn8_i64_custom_INTERNAL_BUF_SIZE; ) {
-        ctx->buf[pos] = internal_buf[internal_buf_pos];
+    for (; internal_buf_pos < Prn8_integer_custom_INTERNAL_BUF_SIZE; ) {
+        head[pos] = internal_buf[internal_buf_pos];
         internal_buf_pos++;
         pos++;
     }
 
     if (!align_zeros && left_align) {
         for (; width > needed_digits; width--) {
-            ctx->buf[pos++] = ' ';
+            head[pos++] = ' ';
         }
     }
 
     Prn8_INSERT_AUTO_NEWLINE();
     
-    ASSERT(ctx->buf_pos+len_to_write == pos);
-    ctx->buf_pos = pos;
+    ASSERT(len_to_write == pos);
 }
 
 #define DEFINE_Prn8_SIGNED(bits)                                    \
@@ -468,7 +482,7 @@ internal inline void Prn8_integer_custom(Prn8 *ctx, union integer64 in, u16 widt
         in.i = i;                                                   \
         Prn8_integer_custom(ctx, in, width, bits, true);            \
     }                                                               \
-    void Prn8_i##bits(Prn8 *ctx, i##bits i) {              \
+    void Prn8_i##bits(Prn8 *ctx, i##bits i) {                       \
         union integer64 in;                                         \
         in.i = i;                                                   \
         Prn8_integer_custom(ctx, in, 1, bits, true);                \
@@ -487,7 +501,7 @@ DEFINE_Prn8_SIGNED(64);
         in.u = u;                                                   \
         Prn8_integer_custom(ctx, in, width, bits, false);           \
     }                                                               \
-    void Prn8_u##bits(Prn8 *ctx, u##bits u) {              \
+    void Prn8_u##bits(Prn8 *ctx, u##bits u) {                       \
         union integer64 in;                                         \
         in.u = u;                                                   \
         Prn8_integer_custom(ctx, in, 1, bits, false);               \
@@ -517,18 +531,17 @@ void Prn8_del_tabs(Prn8* ctx, i32 tabs) {
     ctx->tabs = CLAMPBOTTOM(ctx->tabs-tabs, 0);
 }
 
-internal void Prn8_write_buffer_stdout(Prn8* ctx) {
-    /* TODO: anything better we can do here? */
-    for (i32 i = 0; i < ctx->buf_pos; i++) {
-        if (ctx->buf[i] == 0) {
-            ctx->buf[i] = '0';
-        }
-    }
-    printf("%s", (char*)ctx->buf);
+internal void Prn8_write_buffer_file(Prn8* ctx) {
+    void *raw;
+    u32 len;
+    raw = ctx->arena.memory;
+    len = ctx->arena.pos;
+    
+    fprintf(ctx->file, "%.*s", len, (chr8*) raw);
 }
 
 void Prn8_end(Prn8* ctx) {
-    Prn8_write_buffer_stdout(ctx);
+    Prn8_write_buffer_file(ctx);
 }
 
 #undef RET_STR8

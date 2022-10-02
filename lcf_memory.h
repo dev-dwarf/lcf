@@ -89,6 +89,16 @@ internal LCF_MEMORY_FREE_MEMORY(_lcf_memory_default_free) {
 #define LCF_MEMORY_ARENA_CLEAR 0xCF
 #endif
 
+/* TODO: merge Arena and bump concepts into one struct. */
+/* It was good exercise to code both seperately, but it's not worth:
+ * Downstream code paths must handle both Arena and Bump to be flexible.
+ * Much of the code is almost exactly the same.
+ */
+
+/* NOTE: study ryan fleury arena. In particular, why are arenas a linked list?
+   Try to understand the advantage offered by doing it that way and how it might
+   affect usage code */
+
 /** Arena Allocator
     "Arena" provides managed memory blocks. The backing memory functions provided above
     are used to automatically reserve, commit/decommit, and free virtual memory.
@@ -99,22 +109,24 @@ internal LCF_MEMORY_FREE_MEMORY(_lcf_memory_default_free) {
     ArenaSession_(begin|end) procs to cover the most common scenario.
                                      **/
 struct lcf_Arena {
-    u64 size;
-    u64 pos;
-    u64 commited_pos;
     void *memory;
+    u64 pos;
+
+    u64 size;
+    u64 alignment;
+    u64 commited_pos;
 };
 typedef struct lcf_Arena Arena;
 
 /* Create and destroy Arenas */
 Arena Arena_create_default(void); 
 Arena Arena_create(u64 size);
-Arena Arena_create_custom(u64 size, u64 commit_size);
+Arena Arena_create_custom(u64 size, u64 commit_size, u64 alignment);
 void Arena_destroy(Arena *a); 
 
 /* Take memory from the arena */
 void* Arena_take(Arena *a, u64 size);
-void* Arena_take_custom(Arena *a, u64 size, u64 alignment, u64 commit_size);
+void* Arena_take_custom(Arena *a, u64 size, u64 alignment);
 
 /* Reset arena to a certain position */
 void Arena_reset(Arena *a, u64 pos);
@@ -127,6 +139,7 @@ void Arena_reset_all_decommit(Arena *a);
    (only a performance savings when old_memory was most recently taken block) */
 void* Arena_resize(Arena *a, void* old_memory, u64 old_size, u64 new_size);
 void* Arena_resize_custom(Arena *a, void* old_memory, u64 old_size, u64 new_size, u64 alignment, u64 commit_size);
+
 /* Arena sessions - wraps resetting memory */
 struct lcf_ArenaSession {
     Arena *arena;
@@ -141,50 +154,6 @@ void ArenaSession_end(ArenaSession s);
         ArenaSession session##__FILE__##__LINE__ = ArenaSession_begin(arena); \
         {code}                                                          \
         ArenaSession_end(session##__FILE__##__LINE__);                  \
-    }
-
-/** ******************************** **/
-
-/** Bump Allocator
-    "Bump" manages a user-provided chunk of memory. Functionality is similar to "Arena",
-    however there is no virtual memory features. If you are not looking to provide your
-    own block of memory, use "Arena" instead.
-                                     **/
-struct lcf_Bump {
-    u64 size;
-    u64 pos;
-    void* memory;
-};
-typedef struct lcf_Bump Bump;
-
-/* Create Bumps */
-Bump Bump_create(u64 size, void *memory);
-void Bump_create_inplace(u64 memory_size, Bump *bump_memory);
-
-/* Take and Reset */
-void* Bump_take(Bump *b, u64 size);
-void* Bump_take_custom(Bump *b, u64 size, u64 alignment);
-void Bump_reset(Bump *b, u64 pos);
-void Bump_reset_all(Bump *b);
-
-/* Resize blocks without destroying data.
-   (only a performance savings when old_memory was most recently taken block) */
-void* Bump_resize(Bump *b, void* old_memory, u64 old_size, u64 new_size);
-void* Bump_resize_custom(Bump *b, void* old_memory, u64 old_size, u64 new_size, u64 alignment);
-
-/* Bump Sessions */
-struct lcf_BumpSession {
-    Bump* bump;
-    u64 session_start;
-};
-typedef struct lcf_BumpSession BumpSession;
-BumpSession BumpSession_begin(Bump *b);
-void BumpSession_end(BumpSession s);
-
-#define BUMP_SESSION(bump, code) {                                     \
-        BumpSession session##__FILE__##__LINE__ = BumpSession_begin(bump); \
-        {code}                                                          \
-        BumpSession_end(session##__FILE__##__LINE__);                   \
     }
 
 /** ******************************** **/
