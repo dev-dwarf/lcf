@@ -1,5 +1,4 @@
 #include "lcf_memory.h"
-#include <string.h> /* only for memset, memcpy */
 #define B_PTR(p) (u8*)(p)
 
 internal b32 is_power_of_2(u64 x) {
@@ -91,7 +90,7 @@ void* Arena_take(Arena *a, u64 size) {
 void Arena_reset(Arena *a, u64 pos) {
     if (LCF_MEMORY_DEBUG_CLEAR) {
         /* Clear memory between pos and a->pos */
-        memset((void*) ((u64)a->memory+pos), LCF_MEMORY_ARENA_CLEAR, a->pos - pos);
+        MemorySet((void*) ((u64)a->memory+pos), LCF_MEMORY_ARENA_CLEAR, a->pos - pos);
     }
     a->pos = pos;
 }
@@ -138,11 +137,11 @@ void* Arena_resize_custom(Arena *a, void* old_memory, u64 old_size, u64 new_size
             result = old_memory;
             a->pos = a->pos - old_size + new_size;
             if (old_size < new_size) {
-                memset(B_PTR(old_memory)+old_size, 0, new_size-old_size);
+                MemorySet(B_PTR(old_memory)+old_size, 0, new_size-old_size);
             }
         } else {
             result = Arena_take_custom(a, new_size, alignment);
-            memcpy(result, old_memory, old_size);
+            MemoryCopy(result, old_memory, old_size);
         }
     } else {
         ASSERT(0 && "old_memory is not within the bounds of the Arena's buffer.");

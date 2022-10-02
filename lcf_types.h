@@ -26,6 +26,20 @@
 #define false 0
 #endif
 
+#if OS_WINDOWS
+#pragma section(".roglob", read)
+#define read_only __declspec(allocate(".roglob"))
+#else
+/* TODO(rjf): figure out if this benefit is possible on non-Windows */
+#define read_only
+#endif
+
+/* Bits/Flags */
+#define TEST_FLAG(fl,fi) ((fl)&(fi))
+#define SET_FLAG(fl,fi) ((fl)|=(fi))
+#define UNSET_FLAG(fl,fi) ((fl)&=~(fi))
+#define TOGGLE_FLAG(fl,fi) ((fl)^=(fi))
+
 /* Math  */
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -37,14 +51,18 @@
 /* Assertion */
 #define STATEMENT(S) do { S } while(0)
 
-#if !defined(ASSERT_KILL)
-    #define ASSERT_KILL() (*(int*)0=0)
-#endif
-
+#undef ASSERT
 #if LCF_DISABLE_ASSERT
+    #define ASSERT_KILL() (*(int*)0=0)
     #define ASSERT(C) STATEMENT( if (!(c)) { ASSERTKILL() })
+    #define ASSERT_STATIC(C,label) u8 static_assert_##label[(C)?(-1):(1)]
+    #define NotImplemented Assert(!"Not Implemented")
+    #define InvalidPath Assert(!"Invalid Path")
 #else
     #define ASSERT(C)
+    #define ASSERT_STATIC(C,label)
+    #define NotImplemented 
+    #define InvalidPath 
 #endif
 
 /* Misc */
@@ -57,13 +75,16 @@
 #define _MACRO_CONCAT(S1,S2) S1##S2
 #define MACRO_CONCAT(S1,S2) _MACRO_CONCAT(S1,S2)
 #define MACRO_VAR(var) var##__FILE__##__LINE__
+#define SWAP(T,a,b) do{ T t__ = a; a = b; b = t__; }while(0)
+
+
 /** ******************************** **/
 
 
 /** Portable, Abbreviated Primitive Types  **/
 #include <stdint.h>
-#define TYPE_MIN(t,val) global t MACRO_CONCAT(t,_MIN) = ((t) val)
-#define TYPE_MAX(t,val) global t MACRO_CONCAT(t,_MAX) = ((t) val)
+#define TYPE_MIN(t,val) read_only global t MACRO_CONCAT(t,_MIN) = ((t) val)
+#define TYPE_MAX(t,val) read_only global t MACRO_CONCAT(t,_MAX) = ((t) val)
 
 /* Signed Int */
 typedef int8_t i8;   TYPE_MIN(i8, 0x80);        TYPE_MAX(i8,0x7F);
@@ -87,11 +108,20 @@ typedef i32 b32;
 typedef i64 b64;
 
 /* Floating Point */
-typedef float f32; global f32 f32_epsilon = 1.1920929e-7f;
+typedef float f32; TYPE_MIN(f32,-3.4028234664e+38); TYPE_MAX(f32, 3.4028234664e+38); 
+read_only global f32 f32_EPSILON = 5.96046448e-8;
+read_only global f32 f32_TAU = 6.28318530718f;
+read_only global f32 f32_PI = 3.14159265359f;
+
+read_only global u32 SignF32 = 0x80000000;
+read_only global u32 ExponentF32 = 0x7F800000;
+read_only global u32 MantissaF32 = 0x7FFFFF;
+
 f32 f32_pos_inf(void);
 f32 f32_neg_inf(void);
 f32 f32_abs(f32 f);
 f32 f32_sign(f32 f); /* NOTE(lcf): sign of an IEEE754 float is never 0. */
+
 typedef double f64; global f64 f64_epsilon = 2.220446e-16;
 f64 f64_pos_inf(void);
 f64 f64_neg_inf(void);

@@ -21,6 +21,22 @@
 #define GB(x) ((x) << 30)
 #define TB(x) ((x) << 40)
 
+#include <stdlib.h>
+#include <string.h> /* only for memset, memcpy */
+
+#if !defined(MemoryCopy)
+ #define MemoryCopy memcpy
+ #define MemoryMove memmove
+ #define MemorySet memset
+#endif
+
+#define MemoryCopyStruct(d,s) do { Assert(sizeof(*(d))==sizeof(*(s))); MemoryCopy((d),(s),sizeof(*(d))); } while(0)
+#define MemoryCopyArray(d,s) do{ Assert(sizeof(d)==sizeof(s)); MemoryCopy((d),(s),sizeof(s)); }while(0)
+
+#define MemoryZero(p,s) MemorySet((p), 0, (s))
+#define MemoryZeroStruct(p) MemoryZero((p), sizeof(*(p)))
+#define MemoryZeroArray(a) MemoryZero((a), sizeof(a))
+
 /** ******************************** **/
 
 
@@ -38,32 +54,31 @@
        virtual memory.
  */
 #if !defined(LCF_MEMORY_PROVIDE_MEMORY)
-#define LCF_MEMORY_PROVIDE_MEMORY "stdlib"
-#include <stdlib.h>
+ #define LCF_MEMORY_PROVIDE_MEMORY "stdlib"
 
-internal LCF_MEMORY_RESERVE_MEMORY(_lcf_memory_default_reserve) {
-    return malloc(size);
-}
-internal LCF_MEMORY_COMMIT_MEMORY(_lcf_memory_default_commit) {
-    return 1; /* malloc commits memory automatically */
-}
-internal LCF_MEMORY_DECOMMIT_MEMORY(_lcf_memory_default_decommit) {
-    return;
-}
-internal LCF_MEMORY_FREE_MEMORY(_lcf_memory_default_free) {
-    free(memory);
-}
-
-/* FIXME: may want a vtable for these instead, allowing different arenas to have different
-   types of backing memory. Allen originally coded this way, but then removed it. Why? */
-#define LCF_MEMORY_reserve _lcf_memory_default_reserve
-#define LCF_MEMORY_commit _lcf_memory_default_commit
-#define LCF_MEMORY_decommit _lcf_memory_default_decommit
-#define LCF_MEMORY_free _lcf_memory_default_free
-#define LCF_MEMORY_PAGE_SIZE KB(4)
-#define LCF_MEMORY_DEFAULT_RESERVE_SIZE GB(1)
-#define LCF_MEMORY_DEFAULT_COMMIT_SIZE (4*LCF_MEMORY_PAGE_SIZE)
-#define LCF_MEMORY_DEFAULT_ALIGNMENT (2*sizeof(void*))
+ internal LCF_MEMORY_RESERVE_MEMORY(_lcf_memory_default_reserve) {
+     return malloc(size);
+ }
+ internal LCF_MEMORY_COMMIT_MEMORY(_lcf_memory_default_commit) {
+     return 1; /* malloc commits memory automatically */
+ }
+ internal LCF_MEMORY_DECOMMIT_MEMORY(_lcf_memory_default_decommit) {
+     return;
+ }
+ internal LCF_MEMORY_FREE_MEMORY(_lcf_memory_default_free) {
+     free(memory);
+ }
+ 
+ /* FIXME: may want a vtable for these instead, allowing different arenas to have different
+    types of backing memory. Allen originally coded this way, but then removed it. Why? */
+ #define LCF_MEMORY_reserve _lcf_memory_default_reserve
+ #define LCF_MEMORY_commit _lcf_memory_default_commit
+ #define LCF_MEMORY_decommit _lcf_memory_default_decommit
+ #define LCF_MEMORY_free _lcf_memory_default_free
+ #define LCF_MEMORY_PAGE_SIZE KB(4)
+ #define LCF_MEMORY_DEFAULT_RESERVE_SIZE GB(1)
+ #define LCF_MEMORY_DEFAULT_COMMIT_SIZE (4*LCF_MEMORY_PAGE_SIZE)
+ #define LCF_MEMORY_DEFAULT_ALIGNMENT (2*sizeof(void*))
 #endif
 /** ******************************** **/
 
@@ -88,12 +103,6 @@ internal LCF_MEMORY_FREE_MEMORY(_lcf_memory_default_free) {
 #define LCF_MEMORY_DEBUG_CLEAR 1
 #define LCF_MEMORY_ARENA_CLEAR 0xCF
 #endif
-
-/* TODO: merge Arena and bump concepts into one struct. */
-/* It was good exercise to code both seperately, but it's not worth:
- * Downstream code paths must handle both Arena and Bump to be flexible.
- * Much of the code is almost exactly the same.
- */
 
 /* NOTE: study ryan fleury arena. In particular, why are arenas a linked list?
    Try to understand the advantage offered by doing it that way and how it might
