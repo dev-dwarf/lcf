@@ -26,13 +26,14 @@
 #define false 0
 #endif
 
-#if OS_WINDOWS
-#pragma section(".roglob", read)
-#define read_only __declspec(allocate(".roglob"))
-#else
-/* TODO(rjf): figure out if this benefit is possible on non-Windows */
-#define read_only
-#endif
+/* #if OS_WINDOWS */
+/* #pragma section(".roglob", read) */
+/* #define read_only __declspec(allocate(".roglob")) */
+/* #else */
+/* /\* TODO(rjf): figure out if this benefit is possible on non-Windows *\/ */
+/* #define read_only */
+/* #endif */
+#define read_only 
 
 /* Bits/Flags */
 #define TEST_FLAG(fl,fi) ((fl)&(fi))
@@ -43,7 +44,7 @@
 /* Math  */
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
-#define CLAMP(a,x,b) (((x)<(a))?(a):((b)<(x))?(b):(x))
+#define CLAMP(x,a,b) (((x)<(a))?(a):((b)<(x))?(b):(x))
 #define CLAMPTOP(a,b) MIN(a,b)
 #define CLAMPBOTTOM(a,b) MAX(a,b)
 #define ISPOWER2(x) (x & (x-1) == 0)
@@ -108,7 +109,9 @@ typedef i32 b32;
 typedef i64 b64;
 
 /* Floating Point */
-typedef float f32; TYPE_MIN(f32,-3.4028234664e+38); TYPE_MAX(f32, 3.4028234664e+38); 
+typedef float f32; 
+read_only global f32 f32_MIN = -3.4028234664e+38;
+read_only global f32 f32_MAX = 3.4028234664e+38;
 read_only global f32 f32_EPSILON = 5.96046448e-8;
 read_only global f32 f32_TAU = 6.28318530718f;
 read_only global f32 f32_PI = 3.14159265359f;

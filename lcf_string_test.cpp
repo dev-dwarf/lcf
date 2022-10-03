@@ -2,6 +2,7 @@
 #include "lcf_string.h"
 #include "lcf_memory.cpp"
 #include "lcf_string.cpp"
+#include "lcf_string_tools.cpp"
 
 /* TODO:
  * Huge strings
@@ -9,6 +10,56 @@
  */
 
 int main(int argn, char** argv) {
+    {
+        i64 i = 0;
+        printf("\nTest pop substring\n");
+        str8 s = str8_lit("subway submarine oranges subtraction apples");
+        str8 substring = str8_lit("sub");
+
+        str8_iter_pop_substring(s, substring) {
+            printf("%lld ", i);
+            printf("%.*s\n", str8_PRINTF_ARGS(sub));
+            if (i++ > 100) break;
+        }
+
+        str8 t1 = s;
+        str8 p = str8_pop_at_first_substring(&t1, substring);
+        printf("%.*s | %.*s = %d\n", str8_PRINTF_ARGS(p), str8_PRINTF_ARGS(t1), !str8_is_empty(t1));
+    }
+    
+    {
+        i64 i = 0;
+        printf("\nTest pop delimiter\n");
+        str8 s = str8_lit(",test,of,comma,seperated,values;and;semicolons,!");
+        str8 del = str8_lit(",;");
+        str8_iter_pop_delimiter(s, del) {
+            printf("%lld %.*s\n", i, str8_PRINTF_ARGS(sub));
+            if (i++ > 100) break;
+        }
+    }
+    
+    {
+        i64 i = 0;
+        printf("\nTest pop whitespace\n");
+        str8 s = str8_lit(R"V0G0N(    {
+        i64 i = 0;
+        printf("\nTest pop delimiter\n");
+        str8 s = str8_lit(",test,of,comma,seperated,values;and;semicolons,!");
+        str8 del = str8_lit(",;");
+        str8_iter_pop_delimiter(s, del) {
+            printf("%lld %.*s\n", i, str8_PRINTF_ARGS(sub));
+            if (i++ > 100) break;
+        }
+    })V0G0N");
+        str8 del = str8_lit(",;");
+        str8_iter_pop_whitespace(s) {
+            printf("%lld %.*s\n", i, str8_PRINTF_ARGS(sub));
+            if (i++ > 100) break;
+        }
+    }
+    
+    printf("\n");
+    
     // Print to stdout
     u32 buf_len = 1024;
     chr8 buf[1024];
