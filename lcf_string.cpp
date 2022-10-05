@@ -284,6 +284,5 @@ str8 str8_pop_at_first_whitespace(str8 *src) {
     return s;
 }
 
-
 #undef RET_STR8
 /** ******************************** **/

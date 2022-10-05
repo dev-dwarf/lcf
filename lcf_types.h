@@ -54,16 +54,16 @@
 
 #undef ASSERT
 #if LCF_DISABLE_ASSERT
-    #define ASSERT_KILL() (*(int*)0=0)
-    #define ASSERT(C) STATEMENT( if (!(c)) { ASSERTKILL() })
-    #define ASSERT_STATIC(C,label) u8 static_assert_##label[(C)?(-1):(1)]
-    #define NotImplemented Assert(!"Not Implemented")
-    #define InvalidPath Assert(!"Invalid Path")
-#else
     #define ASSERT(C)
     #define ASSERT_STATIC(C,label)
     #define NotImplemented 
     #define InvalidPath 
+#else
+    #define ASSERT_KILL() (*(int*)0=0)
+#define ASSERT(C) STATEMENT( if (!(C)) { ASSERT_KILL(); })
+    #define ASSERT_STATIC(C,label) u8 static_assert_##label[(C)?(-1):(1)]
+    #define NotImplemented Assert(!"Not Implemented")
+    #define InvalidPath Assert(!"Invalid Path")
 #endif
 
 /* Misc */
