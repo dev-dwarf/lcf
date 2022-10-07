@@ -54,9 +54,7 @@ struct lcf_str8PrintContext {
     /* Format info */
     u32 flags; 
     i32 tabs; /* TODO(lcf): what else could go here? */
-    /* Internal buffer */
-    Arena arena;
-    /* Output */
+    Arena* arena;
     FILE* file;
 
 #ifdef __cplusplus

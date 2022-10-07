@@ -55,7 +55,7 @@ internal chr8* Prn8_get_space_for_str8(Prn8* ctx, u64 len) {
 
     ASSERT(ctx->arena != NULL && "Prn8 Arena is null! Must init with a valid Arena");
     
-    head = Arena_take_custom(&ctx->arena, len, 1);
+    head = Arena_take_custom(ctx->arena, len, 1);
      /* TODO handle null
         if output mode is file try to write out to file and reset the buffer.
      */
@@ -289,8 +289,8 @@ void Prn8_del_tabs(Prn8* ctx, i32 tabs) {
 internal void Prn8_write_buffer_file(Prn8* ctx) {
     void *raw;
     u32 len;
-    raw = ctx->arena.memory;
-    len = ctx->arena.pos;
+    raw = ctx->arena->memory;
+    len = ctx->arena->pos;
     
     fprintf(ctx->file, "%.*s", len, (chr8*) raw);
 }

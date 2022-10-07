@@ -69,30 +69,23 @@
      free(memory);
  }
  
- /* FIXME: may want a vtable for these instead, allowing different arenas to have different
-    types of backing memory. Allen originally coded this way, but then removed it. Why? */
  #define LCF_MEMORY_reserve _lcf_memory_default_reserve
  #define LCF_MEMORY_commit _lcf_memory_default_commit
  #define LCF_MEMORY_decommit _lcf_memory_default_decommit
  #define LCF_MEMORY_free _lcf_memory_default_free
- #define LCF_MEMORY_PAGE_SIZE KB(4)
- #define LCF_MEMORY_DEFAULT_RESERVE_SIZE GB(1)
- #define LCF_MEMORY_DEFAULT_COMMIT_SIZE (4*LCF_MEMORY_PAGE_SIZE)
- #define LCF_MEMORY_DEFAULT_ALIGNMENT (2*sizeof(void*))
+#endif
+
+#if !defined(LCF_MEMORY_RESERVE_SIZE)
+ #define LCF_MEMORY_RESERVE_SIZE GB(1)
+#endif
+#if !defined(LCF_MEMORY_COMMIT_SIZE)
+ #define LCF_MEMORY_COMMIT_SIZE KB(4)
+#endif
+#if !defined(LCF_MEMORY_ALIGNMENT)
+ #define LCF_MEMORY_ALIGNMENT (sizeof(void*))
 #endif
 /** ******************************** **/
 
-
-/* TODO:
- * Pool REF: https://www.gingerbill.org/article/2019/02/15/memory-allocation-strategies-003/#fnref:3
- * Memory allocator struct/type that can be used as parameter
- * Stack REF: https://www.gingerbill.org/article/2019/02/15/memory-allocation-strategies-003/
- * Linked List
-
- Functions that need allocation facilities should take an arena as parameter.
- Allocators should work with a backing block of OS-allocated memory, that can be passed in
- by platform layer.
- */
 
 /* Macro to specify whether memory should be cleared
    For example, when enabled Arena_reset will clear
@@ -118,9 +111,7 @@
     ArenaSession_(begin|end) procs to cover the most common scenario.
                                      **/
 struct lcf_Arena {
-    void *memory;
     u64 pos;
-
     u64 size;
     u64 alignment;
     u64 commited_pos;
@@ -128,9 +119,8 @@ struct lcf_Arena {
 typedef struct lcf_Arena Arena;
 
 /* Create and destroy Arenas */
-Arena Arena_create_default(void); 
-Arena Arena_create(u64 size);
-Arena Arena_create_custom(u64 size, u64 commit_size, u64 alignment);
+Arena* Arena_create_default(void); 
+Arena* Arena_create(u64 size);
 void Arena_destroy(Arena *a); 
 
 /* Take memory from the arena */
@@ -166,5 +156,4 @@ void ArenaSession_end(ArenaSession s);
     }
 
 /** ******************************** **/
-
 #endif

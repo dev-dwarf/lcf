@@ -19,34 +19,19 @@ internal u64 next_alignment(u64 ptr, u64 alignment) {
 }
 
 /** Arena ********************************/
-Arena Arena_create_custom(u64 size, u64 commit_size) {
-    Arena a;
-    a.size = size;
-    a.pos = 0;
-    a.commited_pos = 0;
-    a.memory = LCF_MEMORY_reserve(size);
-
-    if (commit_size > 0) {
-        LCF_MEMORY_commit(a.memory, commit_size);
-        a.commited_pos = commit_size;
-    }
+Arena* Arena_create(u64 size) {
+    Arena* a = (Arena*) LCF_MEMORY_reserve(size);
+    LCF_MEMORY_commit(a, LCF_MEMORY_COMMIT_SIZE);
+    a->size = size;
+    a->pos = sizeof(Arena);
+    a->memory = a + a->pos;
+    a->commited_pos = LCF_MEMORY_COMMIT_SIZE;
+    a->alignment = LCF_MEMORY_ALIGNMENT;
     return a;
 }
 
-Arena Arena_create(u64 size) {
-    Arena a;
-    a.size = size;
-    a.pos = 0;
-    a.commited_pos = 0;
-    a.memory = LCF_MEMORY_reserve(size);
-
-    LCF_MEMORY_commit(a.memory, LCF_MEMORY_DEFAULT_COMMIT_SIZE);
-    a.commited_pos = LCF_MEMORY_DEFAULT_COMMIT_SIZE;
-    return a;
-}
-
-Arena Arena_create_default(void) {
-    return Arena_create(LCF_MEMORY_DEFAULT_RESERVE_SIZE);
+Arena* Arena_create_default(void) {
+    return Arena_create(LCF_MEMORY_RESERVE_SIZE);
 }
 
 void Arena_destroy(Arena *a) {
@@ -55,8 +40,9 @@ void Arena_destroy(Arena *a) {
 
 void* Arena_take_custom(Arena *a, u64 size, u64 alignment) {
     void* result = 0;
+    
     /* Align pos pointer to check if "size" can fit */
-    u64 mem = (u64) a->memory;
+    u64 mem = (u64) a;
     u64 aligned_pos = next_alignment(mem + a->pos, alignment) - mem;
     u64 new_pos = aligned_pos + size;
         
@@ -65,10 +51,10 @@ void* Arena_take_custom(Arena *a, u64 size, u64 alignment) {
         u64 commited_pos = a->commited_pos;
 
         /* Commit memory if needed */
-        if (new_pos >= commited_pos) {
-            u64 new_commited_pos = next_alignment(mem + new_pos, LCF_MEMORY_DEFAULT_COMMIT_SIZE);
+        if (new_pos > commited_pos) {
+            u64 new_commited_pos = next_alignment(mem + new_pos, LCF_MEMORY_COMMIT_SIZE);
             u64 need_to_commit_size = new_commited_pos - commited_pos;
-            if (LCF_MEMORY_commit(B_PTR(mem + commited_pos), need_to_commit_size)) {
+            if (LCF_MEMORY_commit(a + commited_pos, need_to_commit_size)) {
                 a->commited_pos = commited_pos = new_commited_pos;
             }
         }
@@ -84,45 +70,42 @@ void* Arena_take_custom(Arena *a, u64 size, u64 alignment) {
 }
 
 void* Arena_take(Arena *a, u64 size) {
-    return Arena_take_custom(a, size, LCF_MEMORY_DEFAULT_ALIGNMENT);
+    return Arena_take_custom(a, size, LCF_MEMORY_ALIGNMENT);
 }
 
 void Arena_reset(Arena *a, u64 pos) {
-    if (LCF_MEMORY_DEBUG_CLEAR) {
-        /* Clear memory between pos and a->pos */
-        MemorySet((void*) ((u64)a->memory+pos), LCF_MEMORY_ARENA_CLEAR, a->pos - pos);
+    if (pos < a->pos) {
+        pos = Max(pos, sizeof(Arena));
+        if (LCF_MEMORY_DEBUG_CLEAR) {
+            /* Clear memory between pos and a->pos */
+            MemorySet((void*) ((u64)a->memory+pos), LCF_MEMORY_ARENA_CLEAR, a->pos - pos);
+        }
+        a->pos = pos;
     }
-    a->pos = pos;
 }
 
 void Arena_reset_all(Arena *a) {
     Arena_reset(a, 0);
 }
 
-void Arena_reset_decommit_custom(Arena *a, u64 pos) {
+void Arena_reset_decommit(Arena *a, u64 pos) {
     Arena_reset(a, pos);
 
-    /* If the new pos is on a previous page than what is commited,
-       decommit the difference between commited_pos and what commited_pos needs to be
-       to accomodate the new pos */
-    u64 mem = (u64) a->memory;
-    u64 commited_pos = a->commited_pos;
-    u64 needed_commited_pos = next_alignment(mem + pos, LCF_MEMORY_DEFAULT_COMMIT_SIZE) - mem;
-    if (needed_commited_pos < commited_pos) {
-        LCF_MEMORY_decommit(B_PTR(mem+needed_commited_pos), commited_pos-needed_commited_pos);
-        a->commited_pos = needed_commited_pos;
+    /* Decommit everything except what is needed or the basic amount */
+    if (a->commited_pos > LCF_MEMORY_COMMIT_SIZE) {
+        u64 mem = (u64) a;
+        u64 needed_pos = next_alignment(mem + a->pos, LCF_MEMORY_COMMIT_SIZE) - mem;
+        u64 over_committed = arena->commited_pos - needed_pos;
+        LCF_MEMORY_decommit(a+needed_pos, over_commited);
+        a->commited_pos = needed_pos;
     }
-}
-
-void Arena_reset_decommit(Arena *a, u64 pos) {
-    Arena_reset_decommit_custom(a, pos);
 }
 
 void Arena_reset_all_decommit(Arena *a) {
     Arena_reset(a, 0);
 
-    /* decommit all */
-    LCF_MEMORY_decommit(a->memory, a->commited_pos);
+    /* Decommit everything except basic amount */
+    LCF_MEMORY_decommit(a->memory+LCF_MEMORY_COMMIT_SIZE, a->commited_pos-LCF_MEMORY_COMMIT_SIZE);
     a->commited_pos = 0;
 }
 
@@ -131,7 +114,7 @@ void* Arena_resize_custom(Arena *a, void* old_memory, u64 old_size, u64 new_size
 
     if (old_memory == 0 || old_size == 0) {
         return Arena_take_custom(a, new_size, alignment);
-    } else if ((a->memory <= old_memory) && (B_PTR(old_memory) < B_PTR(a->memory)+a->size)) {
+    } else if ((a <= old_memory) && (B_PTR(old_memory) < B_PTR(a)+a->size)) {
         /* Check that old_memory was most recently taken block */
         if (B_PTR(old_memory) == (B_PTR(a->memory) + (a->pos - old_size))) {
             result = old_memory;
@@ -152,7 +135,7 @@ void* Arena_resize_custom(Arena *a, void* old_memory, u64 old_size, u64 new_size
 
 void* Arena_resize(Arena *a, void* old_memory, u64 old_size, u64 new_size) {
     return Arena_resize_custom(a, old_memory, old_size, new_size,
-                               LCF_MEMORY_DEFAULT_ALIGNMENT);
+                               LCF_MEMORY_ALIGNMENT);
 }
 
 ArenaSession ArenaSession_begin(Arena *a) {
@@ -166,6 +149,4 @@ void ArenaSession_end(ArenaSession s) {
     Arena_reset(s.arena, s.session_start);
 }
 /** **************************************/
-
-
 #undef B_PTR

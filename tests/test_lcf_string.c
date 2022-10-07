@@ -1,8 +1,8 @@
 
 #include "../base/lcf_string.h"
-#include "../base/lcf_memory.cpp"
-#include "../base/lcf_string.cpp"
-#include "../base/lcf_string_tools.cpp"
+#include "../base/lcf_memory.c"
+#include "../base/lcf_string.c"
+#include "../base/lcf_string_tools.c"
 
 /* TODO:
  * Huge strings
@@ -63,8 +63,8 @@ int main(int argn, char** argv) {
         str8 s1 = str8_lit("hello ");
         str8 s2 = str8_lit("world!");
 
-        Arena a = Arena_create(1024);
-        str8 concat = str8_concat(s1, s2);
+        Arena* a = Arena_create(1024);
+        str8 concat = str8_concat(a, s1, s2);
         printf("%.*s\n", str8_PRINTF_ARGS(sub));
     }
     
