@@ -2,7 +2,7 @@
   LCF, Created (September 02, 2022)
 
   Description:
-  Types, constants, and macros that I like to use to wrap primitives.
+  Basic types, constants and macros.
   
   Changelog:
 
@@ -132,5 +132,4 @@ f64 f64_abs(f64 f);
 f64 f64_sign(f64 f);
 
 /** ******************************** **/
-
 #endif

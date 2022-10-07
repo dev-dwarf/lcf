@@ -2,14 +2,11 @@
     LCF, Created (September 04, 2022)
 
     Purpose:
-    Provide ASCII and Unicode strings through str (immutable view), strList (linked-list of str)
-    , and String (advanced builder), all using length-based structs.
-    Integrations with lcf_memory allocators.
-    Lots of string manipulation functionality.
-    Conversion to null-terminated strings for commpatibility.
+    Length based string library.
+    Lots of procedures for trimming, searching, and iterating immutable strings.
+    ASCII (str8)
+    UNICODE (str32)
   
-    Changelog:
-
     ************************************ **/
 #if !defined(LCF_STRING)
 #define LCF_STRING "1.0.0"
@@ -64,8 +61,6 @@ str8 str8_substr(str8 s, u64 start, u64 n); /* return str[start, start+n-1] */
 str8 str8_copy(Arena *a, str8 s);
 str8 str8_copy_custom(void* memory, str8 s);
 str8 str8_concat(Arena *a, str8 s1, str8 s2);
-str8 str8_concat_custom(void *memory, str8 s1, str8 s2);
-/* TODO(lcf): variadic/list concat/custom */
 
 /* Comparisons / Predicates */
 #define str8_is_empty(s) ((b32)((s).len == 0))
@@ -131,7 +126,6 @@ str8 str8_pop_at_first_whitespace(str8 *src);
         )
 #define str8_iter_pop_substring(s, split_by) str8_iter_pop_substring_custom(s, split_by, sub)
 
-
 #define str8_iter_pop_delimiter_custom(s, delims, iter)                 \
     for (                                                               \
         str8 MACRO_VAR(_str) = (s),                                     \
@@ -156,13 +150,8 @@ str8 str8_pop_at_first_whitespace(str8 *src);
         )
 #define str8_iter_pop_whitespace(s) str8_iter_pop_whitespace_custom(s, sub)
 
-
-
-/* TODO(lcf): iter pop delimiters
-   TODO(lcf): iter pop whitespace
-*/
-
 /** Unicode                          **/
 /* TODO(lcf) */
+
 /** ******************************** **/
 #endif

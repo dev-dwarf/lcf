@@ -4,9 +4,10 @@
   Description:
   Math stuff; constants, types, functions, macros.
   
-  Changelog:
-
 ************************************ **/
+
+/* TODO: I am no longer happy with the use of macros here. Lets do something better. */
+
 #if !defined(LCF_MATH)
 #define LCF_MATH "1.0.0"
 
@@ -32,7 +33,6 @@ f32 f32_to_degrees(f32 a);
 f64 f64_to_degrees(f64 a);
 /** ******************************** **/
 
-
 /** Floating point math functions    **/
 // TODO: truncate, floor, ceil, mod?
 f32 f32_lerp(f32 a, f32 b, f32 p);
@@ -48,7 +48,6 @@ f64 f64_radian_lerp(f64 a, f64 b, f64 p);
 f32 f32_approach(f32 x, f32 t, f32 s);
 f64 f64_approach(f64 x, f64 t, f64 s);
 /** ******************************** **/
-
 
 /** Vec, Rect, Interval Types        **/
 #define VEC2(T) v2##T

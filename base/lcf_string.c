@@ -87,15 +87,6 @@ str8 str8_concat(Arena *a, str8 s1, str8 s2) {
     return concat;
 }
 
-str8 str8_concat_custom(void *memory, str8 s1, str8 s2) {
-    str8 concat;
-    concat.len = s1.len+s2.len;
-    concat.str = (chr8*) memory;
-    memcpy(concat.str, s1.str, s1.len);
-    memcpy(concat.str+s1.len, s2.str, s2.len);
-    return concat;
-}
-
 /* Comparisons / Predicates */
 b32 str8_eq(str8 a, str8 b) {
     return (a.len == b.len) &&

@@ -2,12 +2,13 @@
     LCF, Created (October 02, 2022)
 
     Purpose:
-    Provide higher-level tools for working with lcf_strings.
+    Provide higher-level functionality ontop of lcf_string.
     String Formatting (Immediate Mode)
-    String scanning/parsing
-    
-    Changelog:
 
+    TODO:
+    String scanning/parsing
+    String interning?
+    
     ************************************ **/
 #if !defined(LCF_STRING_TOOLS)
 #define LCF_STRING_TOOLS "1.0.0"

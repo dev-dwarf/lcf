@@ -2,11 +2,11 @@
   LCF, Created (September 03, 2022)
 
   Purpose:
-  Abstract over virtual memory for use by allocators. Can (Should) be overriden by OS layer.
-  Using virtual memory abstraction, provide managed Arena allocator.
-  Provide simple Bump allocator, and fixed-size memory Pool allocator, both using user-memory.
-  
-  Changelog:
+  Virtual memory operations.
+  Arena Memory management primitive using virtual memory.
+
+  TODO:
+  Pool Memory?
 
 ************************************ **/
 #if !defined(LCF_MEMORY)
