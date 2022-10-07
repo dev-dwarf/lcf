@@ -4,8 +4,6 @@
   Description:
   Basic types, constants and macros.
   
-  Changelog:
-
 ************************************ **/
 #if !defined(LCF_TYPES)
 #define LCF_TYPES "1.0.0"

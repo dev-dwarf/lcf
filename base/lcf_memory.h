@@ -137,7 +137,7 @@ void Arena_reset_all_decommit(Arena *a);
 /* Resize blocks without destroying data.
    (only a performance savings when old_memory was most recently taken block) */
 void* Arena_resize(Arena *a, void* old_memory, u64 old_size, u64 new_size);
-void* Arena_resize_custom(Arena *a, void* old_memory, u64 old_size, u64 new_size, u64 alignment, u64 commit_size);
+void* Arena_resize_custom(Arena *a, void* old_memory, u64 old_size, u64 new_size, u64 alignment);
 
 /* Arena sessions - wraps resetting memory */
 struct lcf_ArenaSession {

@@ -42,9 +42,9 @@ struct lcf_String {
 #define str8_PRINTF_ARGS(s) (int)(s).len, (s).str
 
 /* Create strs */
-str8 str8_from(u8* s, u64 len);
-str8 str8_from_pointer_range(u8 *p1, u8 *p2);
-str8 str8_from_cstring(u8 *cstr);
+str8 str8_from(chr8* s, u64 len);
+str8 str8_from_pointer_range(chr8 *p1, chr8 *p2);
+str8 str8_from_cstring(chr8 *cstr);
 str8 str8_empty(void);
 #define str8_lit(s) str8_from((chr8*)(s),(u64)sizeof(s)-1) /* -1 to exclude null character */
 

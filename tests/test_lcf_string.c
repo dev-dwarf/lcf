@@ -41,16 +41,16 @@ int main(int argn, char** argv) {
     {
         i64 i = 0;
         printf("\nTest pop whitespace\n");
-        str8 s = str8_lit(R"V0G0N(    {
-        i64 i = 0;
-        printf("\nTest pop delimiter\n");
-        str8 s = str8_lit(",test,of,comma,seperated,values;and;semicolons,!");
-        str8 del = str8_lit(",;");
-        str8_iter_pop_delimiter(s, del) {
-            printf("%lld %.*s\n", i, str8_PRINTF_ARGS(sub));
-            if (i++ > 100) break;
-        }
-    })V0G0N");
+        str8 s = str8_lit("    {"
+"                    i64 i = 0;"
+"                    printf(\"\\nTest pop delimiter\\n\");"
+"                    str8 s = str8_lit(\",test,of,comma,seperated,values;and;semicolons,!\");"
+"                    str8 del = str8_lit(\",;\");"
+"                    str8_iter_pop_delimiter(s, del) {"
+"                        printf(\"%lld %.*s\\n\", i, str8_PRINTF_ARGS(sub));"
+"                        if (i++ > 100) break;"
+"                    }"
+"                })");
         str8 del = str8_lit(",;");
         str8_iter_pop_whitespace(s) {
             printf("%lld %.*s\n", i, str8_PRINTF_ARGS(sub));
@@ -59,13 +59,13 @@ int main(int argn, char** argv) {
     }
 
     {
-        printf("\Test concat");
+        printf("\nTest concat\n");
         str8 s1 = str8_lit("hello ");
         str8 s2 = str8_lit("world!");
 
         Arena* a = Arena_create(1024);
         str8 concat = str8_concat(a, s1, s2);
-        printf("%.*s\n", str8_PRINTF_ARGS(sub));
+        printf("%.*s\n", str8_PRINTF_ARGS(concat));
     }
     
     printf("\n");

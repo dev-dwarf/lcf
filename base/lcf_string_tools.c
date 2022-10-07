@@ -289,7 +289,7 @@ void Prn8_del_tabs(Prn8* ctx, i32 tabs) {
 internal void Prn8_write_buffer_file(Prn8* ctx) {
     void *raw;
     u32 len;
-    raw = ctx->arena->memory;
+    raw = ctx->arena+sizeof(Arena);
     len = ctx->arena->pos;
     
     fprintf(ctx->file, "%.*s", len, (chr8*) raw);

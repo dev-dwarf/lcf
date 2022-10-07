@@ -24,7 +24,6 @@ Arena* Arena_create(u64 size) {
     LCF_MEMORY_commit(a, LCF_MEMORY_COMMIT_SIZE);
     a->size = size;
     a->pos = sizeof(Arena);
-    a->memory = a + a->pos;
     a->commited_pos = LCF_MEMORY_COMMIT_SIZE;
     a->alignment = LCF_MEMORY_ALIGNMENT;
     return a;
@@ -35,7 +34,7 @@ Arena* Arena_create_default(void) {
 }
 
 void Arena_destroy(Arena *a) {
-    LCF_MEMORY_free(a->memory, a->size);
+    LCF_MEMORY_free(a, a->size);
 }
 
 void* Arena_take_custom(Arena *a, u64 size, u64 alignment) {
@@ -75,10 +74,10 @@ void* Arena_take(Arena *a, u64 size) {
 
 void Arena_reset(Arena *a, u64 pos) {
     if (pos < a->pos) {
-        pos = Max(pos, sizeof(Arena));
+        pos = MAX(pos, sizeof(Arena));
         if (LCF_MEMORY_DEBUG_CLEAR) {
             /* Clear memory between pos and a->pos */
-            MemorySet((void*) ((u64)a->memory+pos), LCF_MEMORY_ARENA_CLEAR, a->pos - pos);
+            MemorySet((void*) ((u64)a+pos), LCF_MEMORY_ARENA_CLEAR, a->pos - pos);
         }
         a->pos = pos;
     }
@@ -95,7 +94,7 @@ void Arena_reset_decommit(Arena *a, u64 pos) {
     if (a->commited_pos > LCF_MEMORY_COMMIT_SIZE) {
         u64 mem = (u64) a;
         u64 needed_pos = next_alignment(mem + a->pos, LCF_MEMORY_COMMIT_SIZE) - mem;
-        u64 over_committed = arena->commited_pos - needed_pos;
+        u64 over_commited = a->commited_pos - needed_pos;
         LCF_MEMORY_decommit(a+needed_pos, over_commited);
         a->commited_pos = needed_pos;
     }
@@ -105,7 +104,7 @@ void Arena_reset_all_decommit(Arena *a) {
     Arena_reset(a, 0);
 
     /* Decommit everything except basic amount */
-    LCF_MEMORY_decommit(a->memory+LCF_MEMORY_COMMIT_SIZE, a->commited_pos-LCF_MEMORY_COMMIT_SIZE);
+    LCF_MEMORY_decommit(a+LCF_MEMORY_COMMIT_SIZE, a->commited_pos-LCF_MEMORY_COMMIT_SIZE);
     a->commited_pos = 0;
 }
 
@@ -116,7 +115,7 @@ void* Arena_resize_custom(Arena *a, void* old_memory, u64 old_size, u64 new_size
         return Arena_take_custom(a, new_size, alignment);
     } else if ((a <= old_memory) && (B_PTR(old_memory) < B_PTR(a)+a->size)) {
         /* Check that old_memory was most recently taken block */
-        if (B_PTR(old_memory) == (B_PTR(a->memory) + (a->pos - old_size))) {
+        if (B_PTR(old_memory) == (B_PTR(a) + (a->pos - old_size))) {
             result = old_memory;
             a->pos = a->pos - old_size + new_size;
             if (old_size < new_size) {
