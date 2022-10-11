@@ -276,4 +276,73 @@ str8 str8_pop_at_first_whitespace(str8 *src) {
 }
 
 #undef RET_STR8
+/** Str8 Lists                       **/
+
+/* List manipulation */
+void Str8List_add_node(Str8List *list, Str8Node *n) {
+    if (list->last) {
+        list->last->next = n;
+    } else {
+        ASSERTM(list->count == 0, "Str8List.count must be 0 for empty list. (Try clearing the struct first)");
+        list->first = n;
+    }
+    list->last = n;
+    list->count++;
+    list->len += n->str.len;
+}
+
+void Str8List_append(Str8List *list, Str8List nodes) {
+    if (nodes.first != 0) {
+        /* If the list is empty, replace it with nodes */
+        if (list->last == 0) {
+            *list = nodes;
+        } else {
+            list->last->next = nodes.first;
+            list->last = nodes.last;
+        }
+        list->count += nodes.count;
+        list->len += nodes.len;
+        /* Following line relic from when nodes was Str8List* */
+        /* It seems clearer to not modify nodes, most of this code,
+           assumes immutable usage anyway. Time will tell. */
+        /* MemoryZero(nodes, sizeof(Str8List)); */
+    }
+}
+
+void Str8List_add(Arena *arena, Str8List *list, str8 str) {
+    Str8Node *n = Arena_take_array(arena, Str8Node, 1);
+    n->str = str;
+    n->next = 0;
+    Str8List_add_node(list, n);
+}
+
+str8 Str8List_join(Arena *arena, Str8List list, str8 prefix, str8 seperator, str8 postfix) {
+    /* Calculate size */
+    str8 result = {0};
+    result.len = prefix.len +
+        list.len + seperator.len*((list.count > 1)? list.count - 1: 0) +
+        postfix.len;
+    result.str = Arena_take_array(arena, chr8, result.len);
+
+    /* Fill result */
+    chr8 *ptr = result.str;
+
+    MemoryCopy(ptr, prefix.str, prefix.len);
+    ptr += prefix.len;
+
+    for (Str8Node *node = list.first; node; node = node->next) {
+        MemoryCopy(ptr, node->str.str, node->str.len);
+        ptr += node->str.len;
+        if (node != list.last) {
+            MemoryCopy(ptr, seperator.str, seperator.len);
+            ptr += seperator.len;
+        }
+    }
+    
+    MemoryCopy(ptr, postfix.str, postfix.len);
+    ptr += postfix.len;
+
+    return result;
+}
+
 /** ******************************** **/

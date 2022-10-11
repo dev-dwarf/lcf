@@ -7,6 +7,9 @@
 /* TODO:
  * Huge strings
  * Check size of strings
+ *
+ * Timing
+ * Timing Comparisons
  */
 
 int main(int argn, char** argv) {
@@ -64,8 +67,31 @@ int main(int argn, char** argv) {
         str8 s2 = str8_lit("world!");
 
         Arena* a = Arena_create(1024);
-        str8 concat = str8_concat(a, s1, s2);
-        printf("%.*s\n", str8_PRINTF_ARGS(concat));
+        str8 result = str8_concat(a, s1, s2);
+        printf("%.*s\n", str8_PRINTF_ARGS(result));
+    }
+
+    {
+        printf("\nTest String lists\n");
+        Arena* a = Arena_create(1024);
+        Str8List l1 = {0};
+        Str8List_add(a, &l1, str8_lit("inside"));
+        Str8List_add(a, &l1, str8_lit("outside"));
+        Str8List_add(a, &l1, str8_lit("inside"));
+                
+        Str8List l2 = {0};
+        Str8List_add(a, &l2, str8_lit("outside"));
+        Str8List_add(a, &l2, str8_lit("inside"));
+        Str8List_add(a, &l2, str8_lit("outside"));
+
+        Str8List_append(&l1, l2);
+
+        str8 result = Str8List_join(a, l1,
+                                    str8_lit("Milk "),
+                                    str8_lit(" a bag of Milk "),
+                                    str8_lit(" a bag of Milk..."));
+
+        printf("%.*s\n", str8_PRINTF_ARGS(result));
     }
     
     printf("\n");

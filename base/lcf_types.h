@@ -58,10 +58,11 @@
     #define InvalidPath 
 #else
     #define ASSERT_KILL() (*(int*)0=0)
-#define ASSERT(C) STATEMENT( if (!(C)) { ASSERT_KILL(); })
+    #define ASSERT(C) STATEMENT( if (!(C)) { ASSERT_KILL(); })
+    #define ASSERTM(C, M) ASSERT((M) && (C));
     #define ASSERT_STATIC(C,label) u8 static_assert_##label[(C)?(-1):(1)]
-    #define NotImplemented Assert(!"Not Implemented")
-    #define InvalidPath Assert(!"Invalid Path")
+    #define NOTIMPLEMENTED() ASSERTM(0, "Not Implemented")
+    #define BADPATH(M) ASSERTM(0, M);
 #endif
 
 /* Misc */

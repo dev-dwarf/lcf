@@ -6,7 +6,7 @@ internal b32 is_power_of_2(u64 x) {
 }
 
 internal u64 next_alignment(u64 ptr, u64 alignment) {
-    ASSERT(is_power_of_2(alignment));
+    ASSERTM(is_power_of_2(alignment), "Alignments must be a power of 2.");
 
     /* Fast replacement for mod because alignment is power of 2 */
     u64 modulo = ptr & (alignment-1);
@@ -46,7 +46,7 @@ void* Arena_take_custom(Arena *a, u64 size, u64 alignment) {
     u64 new_pos = aligned_pos + size;
         
     /* Check that there is space */
-    if (aligned_pos + size < a->size) {
+    if (new_pos < a->size) {
         u64 commited_pos = a->commited_pos;
 
         /* Commit memory if needed */
@@ -64,7 +64,7 @@ void* Arena_take_custom(Arena *a, u64 size, u64 alignment) {
             a->pos = new_pos;
         }
     }
-    ASSERT(result != NULL && "Arena out of memory!");
+    ASSERTM(result != NULL, "Arena out of memory!");
     return result;
 }
 
@@ -126,7 +126,7 @@ void* Arena_resize_custom(Arena *a, void* old_memory, u64 old_size, u64 new_size
             MemoryCopy(result, old_memory, old_size);
         }
     } else {
-        ASSERT(0 && "old_memory is not within the bounds of the Arena's buffer.");
+        BADPATH("old_memory is not within the bounds of the Arena's buffer.");
     }
 
     return result;

@@ -126,7 +126,7 @@ void Arena_destroy(Arena *a);
 /* Take memory from the arena */
 void* Arena_take(Arena *a, u64 size);
 void* Arena_take_custom(Arena *a, u64 size, u64 alignment);
-#define Arena_take_array(a, type, count) ((type)[]) Arena_take(a, sizeof(type)*count)
+#define Arena_take_array(a, type, count) ((type*) Arena_take(a, sizeof(type)*count))
 
 /* Reset arena to a certain position */
 void Arena_reset(Arena *a, u64 pos);

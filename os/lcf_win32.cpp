@@ -14,6 +14,8 @@ str8 win32_LoadEntireFile(Arena *arena, str8 path) {
     DWORD flags_and_attributes = 0;
     HANDLE template_file = 0;
 
+    /* TODO: WARN: CreateFileA is not recommended, as file paths can be unicode and have
+       other characters. Once we have unicode support use UTF-16 for windows file paths. */
     HANDLE file = CreateFileA(path, desired_access, share_mode, &security_attributes,
                               creation_disposition, flags_and_attributes, template_file);
 

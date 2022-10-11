@@ -4,6 +4,7 @@
     Purpose:
     Length based string library.
     Lots of procedures for trimming, searching, and iterating immutable strings.
+    Lists of strings.
     ASCII (str8)
     UNICODE (str32)
   
@@ -22,26 +23,9 @@ struct lcf_str8 { /* TODO(lcf): spread operator macro?? */
 };
 typedef struct lcf_str8 str8;
 
-struct lcf_str8Node {
-    struct lcf_str8Node *next;
-    struct lcf_str8 string;
-};
-struct lcf_str8List {
-    struct lcf_str8Node *first;
-    struct lcf_str8Node *last;
-    u64 count;
-    u64 size; // ?
-};
-typedef struct lcf_str8Node str8Node;
-typedef struct lcf_str8List str8List;
-
-struct lcf_String {
-    str8List list; // TODO(lcf) is String even separate? or just str and strList
-};
-
 #define str8_PRINTF_ARGS(s) (int)(s).len, (s).str
 
-/* Create strs */
+/* Create str8s */
 str8 str8_from(chr8* s, u64 len);
 str8 str8_from_pointer_range(chr8 *p1, chr8 *p2);
 str8 str8_from_cstring(chr8 *cstr);
@@ -149,6 +133,27 @@ str8 str8_pop_at_first_whitespace(str8 *src);
         iter = str8_pop_at_first_whitespace(&MACRO_VAR(_str))       \
         )
 #define str8_iter_pop_whitespace(s) str8_iter_pop_whitespace_custom(s, sub)
+
+/** Str8 Lists                       **/
+
+struct lcf_str8Node {
+    struct lcf_str8Node *next;
+    struct lcf_str8 str;
+};
+struct lcf_str8List {
+    struct lcf_str8Node *first;
+    struct lcf_str8Node *last;
+    u64 count;
+    u64 len;
+};
+typedef struct lcf_str8Node Str8Node;
+typedef struct lcf_str8List Str8List;
+
+/* List manipulation */
+void Str8List_add_node(Str8List *list, Str8Node *n);
+void Str8List_append(Str8List *list, Str8List nodes);
+void Str8List_add(Arena *arena, Str8List *list, str8 str);
+str8 Str8List_join(Arena *arena, Str8List list, str8 prefix, str8 seperator, str8 postfix);
 
 /** Unicode                          **/
 /* TODO(lcf) */

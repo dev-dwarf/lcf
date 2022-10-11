@@ -53,7 +53,7 @@ Prn8 Prn8_set_output_file(Prn8 p, FILE* file) {
 internal chr8* Prn8_get_space_for_str8(Prn8* ctx, u64 len) {
     void* head = NULL;
 
-    ASSERT(ctx->arena != NULL && "Prn8 Arena is null! Must init with a valid Arena");
+    ASSERTM(ctx->arena != NULL, "Prn8 Arena is null! Must init with a valid Arena");
     
     head = Arena_take_custom(ctx->arena, len, 1);
      /* TODO handle null
