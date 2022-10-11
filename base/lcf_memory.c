@@ -72,6 +72,18 @@ void* Arena_take(Arena *a, u64 size) {
     return Arena_take_custom(a, size, LCF_MEMORY_ALIGNMENT);
 }
 
+void* Arena_take_zero_custom(Arena *a, u64 size, u64 alignment) {
+    void* mem = Arena_take_custom(a, size, alignment);
+    MemoryZero(mem, size);
+    return mem;
+}
+
+void* Arena_take_zero(Arena *a, u64 size) {
+    void* mem = Arena_take(a, size);
+    MemoryZero(mem, size);
+    return mem;
+}
+
 void Arena_reset(Arena *a, u64 pos) {
     if (pos < a->pos) {
         pos = MAX(pos, sizeof(Arena));

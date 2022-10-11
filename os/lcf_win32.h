@@ -14,10 +14,11 @@
 #include <windows.h>
 
 /* API */
-str8 win32_LoadEntireFile(Arena *arena, str8 path);
+str8 win32_load_entire_file(Arena *arena, str8 filepath);
+u64 win32_get_file_write_time(str8 filepath);
 
 /* Helpers */
-internal void win32_ReadWholeBlock(HANDLE file, void* data, u64 data_size);
+internal void win32_read_block(HANDLE file, void* block, u64 block_size);
 
 #endif
 

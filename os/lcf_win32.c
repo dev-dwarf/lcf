@@ -1,0 +1,87 @@
+#include "lcf_win32.h"
+
+str8 win32_load_entire_file(Arena *arena, str8 filepath) {
+    str8 fileString = {0};
+
+    DWORD desired_access = GENERIC_READ;
+    DWORD share_mode = 0;
+    SECURITY_ATTRIBUTES security_attributes = {
+        (DWORD)sizeof(SECURITY_ATTRIBUTES),
+        0,
+        0,
+    };
+    DWORD creation_disposition = OPEN_EXISTING;
+    DWORD flags_and_attributes = 0;
+    HANDLE template_file = 0;
+
+    /* TODO: WARN: CreateFileA is not recommended, as file paths can be unicode and have
+       other characters. Once we have unicode support use UTF-16 for windows file paths. */
+    HANDLE file = CreateFileA(filepath.str, desired_access, share_mode, &security_attributes,
+                              creation_disposition, flags_and_attributes, template_file);
+
+    if (file != INVALID_HANDLE_VALUE) {
+        LARGE_INTEGER size_int;
+        if (GetFileSizeEx(file, &size_int) && size_int.QuadPart > 0) {
+            u64 size = size_int.QuadPart;
+            /* NOTE: size+1 to make space for null terminator as default.
+               Made this default because often the loaded string will need to be passed
+               to other c APIs, making it convenient to not have to add the null later.
+             */
+            chr8 *data = Arena_take_array(arena, chr8, size+1);
+            win32_read_block(file, data, size);
+            data[size] = '\0';
+            fileString.str = data;
+            fileString.len = size;
+        }
+        CloseHandle(file);
+    }
+    return fileString;
+}
+
+internal void win32_read_block(HANDLE file, void* block, u64 block_size) {
+    chr8 *ptr = (chr8*) block;
+    chr8 *opl = ptr + block_size;
+    for (;;) {
+        u64 unread = (u64)(opl-ptr);
+        DWORD bytes_to_read = (DWORD)(CLAMPTOP(unread, u32_MAX));
+        DWORD bytes_read = 0;
+        if (!ReadFile(file, ptr, bytes_to_read, &bytes_read, 0)) {
+            break;
+        }
+        ptr += bytes_read;
+        if (ptr >= opl) {
+            break;
+        }
+    }
+}
+
+b32 win32_file_was_written(str8 filepath, u64* last_write_time) {
+    u64 new_write_time = win32_get_file_write_time(filepath);
+    if (new_write_time != *last_write_time) {
+        *last_write_time = new_write_time;
+        return true;
+    }
+    return false;
+}
+
+u64 win32_get_file_write_time(str8 filepath) {
+    /* FILETIME struct is 64 bits.
+       REF: https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-filetime
+    */
+    ASSERT(sizeof(FILETIME) == 8);
+    
+    union {
+        u64 u;
+        FILETIME ft; 
+    } write_time;
+    write_time.u = 0;
+
+    WIN32_FIND_DATA findData;
+    HANDLE findHandle = FindFirstFileA(filepath.str, &findData);
+    if (findHandle != INVALID_HANDLE_VALUE) {
+        write_time.ft = findData.ftLastWriteTime;
+        FindClose(findHandle);
+    }
+
+    return write_time.u;
+}
