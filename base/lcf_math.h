@@ -27,10 +27,10 @@ global f64 f64_e = 2.71828182846;
 global f64 f64_golden_ratio = 1.61803398875;
 global f64 f64_golden_ratio_inv = 0.61803398875;
 
-f32 f32_to_radians(f32 a);
-f64 f64_to_radians(f64 a);
-f32 f32_to_degrees(f32 a);
-f64 f64_to_degrees(f64 a);
+f32 f32_deg2rad(f32 a);
+f64 f64_deg2rad(f64 a);
+f32 f32_rad2deg(f32 a);
+f64 f64_rad2deg(f64 a);
 /** ******************************** **/
 
 /** Floating point math functions    **/
@@ -49,101 +49,123 @@ f32 f32_approach(f32 x, f32 t, f32 s);
 f64 f64_approach(f64 x, f64 t, f64 s);
 /** ******************************** **/
 
-/** Vec, Rect, Interval Types        **/
-#define VEC2(T) v2##T
-#define VEC3(T) v3##T
-#define VEC4(T) v4##T
-#define RECT(T) rc##T
-#define INTERVAL(T) iv##T
-#define DEF_FOR_ALL_TYPES(DEF) DEF(i32); DEF(i64); DEF(f32); DEF(f64); 
-#define DEFVEC2(T) union VEC2(T) {           \
-        struct {T x; T y;};                   \
-        T v[2];                               \
-    }
-DEF_FOR_ALL_TYPES(DEFVEC2);
-#undef DEFVEC2
-#define DEFVEC3(T) union VEC3(T) {          \
-        struct { T x; T y; T z; };                     \
-        struct { T r; T g; T b; };                     \
-        T v[3];                                        \
-    }
-DEF_FOR_ALL_TYPES(DEFVEC3);
-#undef DEFVEC3
-#define DEFVEC4(T) union VEC4(T) {                         \
-        struct { T x; T y; T z; T w;};                      \
-        struct { T r; T g; T b; T a;};                      \
-        T v[4];                                             \
-    }
-DEF_FOR_ALL_TYPES(DEFVEC4);
-#undef DEFVEC4
-#define DEFRECT(T) union RECT(T) {                                  \
-        struct { T x1; T y1; T x2; T y2; };                         \
-        struct { VEC2(T) p1; VEC2(T) p2; };   \
-    }
-DEF_FOR_ALL_TYPES(DEFRECT);
-#undef DEFRECT
-#define DEFINTERVAL(T) union INTERVAL(T) {       \
-        struct { T min; T max; };                 \
-        T iv[2];                                  \
-    }
-DEF_FOR_ALL_TYPES(DEFINTERVAL);
-#undef DEFINTERVAL
+/** Vector and Matrix Types          **/
+union vec4f32 { 
+    struct { f32 x, y, z, w; }; 
+    struct { f32 r, g, b, a; }; 
+    f32 components[4]; 
+}; typedef union vec4f32 vec4f32;
+
+union vec4f64 { 
+    struct { f64 x, y, z, w; }; 
+    struct { f64 r, g, b, a; }; 
+    f64 components[4]; 
+}; typedef union vec4f64 vec4f64;
+
+union vec4i32 { 
+    struct { i32 x, y, z, w; }; 
+    struct { i32 r, g, b, a; }; 
+    i32 components[4]; 
+}; typedef union vec4i32 vec4i32;
+
+union vec4i64 { 
+    struct { i64 x, y, z, w; }; 
+    struct { i64 r, g, b, a; }; 
+    i64 components[4]; 
+}; typedef union vec4i64 vec4i64;
+
+typedef vec4f32 vec4;
+
+union vec3f32 { 
+    struct { f32 x,y,z; }; 
+    struct { f32 r,g,b; }; 
+    f32 components[3]; 
+}; typedef union vec3f32 vec3f32;
+
+union vec3f64 { 
+    struct { f64 x,y,z; }; 
+    struct { f64 r,g,b; }; 
+    f64 components[3]; 
+}; typedef union vec3f64 vec3f64;
+
+union vec3i32 { 
+    struct { i32 x,y,z; }; 
+    struct { i32 r,g,b; }; 
+    i32 components[3]; 
+}; typedef union vec3i32 vec3i32;
+
+union vec3i64 { 
+    struct { i64 x,y,z; }; 
+    struct { i64 r,g,b; }; 
+    i64 components[3]; 
+}; typedef union vec3i64 vec3i64;
+
+typedef vec3f32 vec3;
+
+union vec2f32 {        
+    struct { f32 x,y; }; 
+    struct { f32 u,v; }; 
+    struct { f32 w,h; }; 
+    f32 components[2]; 
+}; typedef union vec2f32 vec2f32;
+
+union vec2f64 {        
+    struct { f64 x,y; }; 
+    struct { f64 u,v; }; 
+    struct { f64 w,h; }; 
+    f64 components[2]; 
+}; typedef union vec2f64 vec2f64;
+
+union vec2i32 {        
+    struct { i32 x,y; }; 
+    struct { i32 u,v; }; 
+    struct { i32 w,h; }; 
+    i32 components[2]; 
+}; typedef union vec2i32 vec2i32;
+
+union vec2i64 {        
+    struct { i64 x,y; }; 
+    struct { i64 u,v; }; 
+    struct { i64 w,h; }; 
+    i64 components[2]; 
+}; typedef union vec2i64 vec2i64;
+
+typedef vec2f32 vec2;
+
+union mat4f32 { 
+    struct { vec4f32 x,y,z,w; };
+    struct { vec4f32 vec[4]; };
+    struct { f32 _comps[4*3]; vec3f32 translation; }; 
+    f32 m[4][4];
+    f32 components[4*4];
+}; typedef union mat4f32 mat4f32;
+
+union mat4f64 { 
+    struct { vec4f64 x,y,z,w; };
+    struct { vec4f64 vec[4]; };
+    struct { f64 _comps[4*3]; vec3f64 translation; }; 
+    f64 m[4][4];
+    f64 components[4*4];
+}; typedef union mat4f64 mat4f64;
+
+typedef mat4f32 mat4;
+
+union mat2f32 {              
+    struct { vec2f32 x,y; };
+    struct { vec2f32 vec[2]; };
+    f32 m[2][2];
+    f32 components[2*2];
+}; typedef union mat2f32 mat2f32;
+
+union mat2f64 {              
+    struct { vec2f64 x,y; };
+    struct { vec2f64 vec[2]; };
+    f64 m[2][2];
+    f64 components[2*2];
+}; typedef union mat2f64 mat2f64;
+
+typedef mat2f32 mat2;
 
 /** ******************************** **/
-
-
-/** Vec, Rect, Interval Functions    **/
-#define _MAKE(V) make_##V
-#define MAKE(V) V _MAKE(V)
-#define DEFMAKEV2(T) MAKE(VEC2(T))(T x, T y);
-DEF_FOR_ALL_TYPES(DEFMAKEV2);
-#undef DEFMAKEV2
-#define DEFMAKEV3(T) MAKE(VEC3(T))(T xr, T yg, T zb);
-DEF_FOR_ALL_TYPES(DEFMAKEV3);
-#undef DEFMAKEV3
-#define DEFMAKEV4(T) MAKE(VEC4(T))(T xr, T yg, T zb, T wa);
-DEF_FOR_ALL_TYPES(DEFMAKEV4);
-#undef DEFMAKEV4
-#define DEFMAKERECT(T) MAKE(RECT(T))(T x1, T y1, T x2, T y2);
-DEF_FOR_ALL_TYPES(DEFMAKERECT);
-#undef DEFMAKERECT
-#define DEFMAKEINTERVAL(T) MAKE(INTERVAL(T))(T min, T max);
-DEF_FOR_ALL_TYPES(DEFMAKEINTERVAL);
-#undef DEFMAKEINTERVAL
-#undef _MAKE
-#undef MAKE
-
-#define OPS(T,V)                                                     \
-    V operator+(const V &a, const V &b);                                \
-    V operator-(const V &a, const V &b);                                \
-    V operator*(const V &a, const T &b);                                \
-    V operator*(const T &a, const V &b);                                
-#define DEFOPS(T)                               \
-    OPS(T,VEC2(T));                             \
-    OPS(T,VEC3(T));                             \
-    OPS(T,VEC4(T));                             
-DEF_FOR_ALL_TYPES(DEFOPS);
-#undef OPS
-#undef DEFOPS
-
-#define DOTNAME(V) V##_dot
-#define DOT(T,V) \
-    T DOTNAME(V)(V a, V b)
-#define DEFDOT(T) \
-    DOT(T, VEC2(T)); \
-    DOT(T, VEC3(T)); \
-    DOT(T, VEC4(T)); 
-DEF_FOR_ALL_TYPES(DEFDOT);
-#undef DOTNAME
-#undef DOT
-#undef DEFDOT
-
-/** ******************************** **/
-#undef VEC2
-#undef VEC3
-#undef VEC4
-#undef RECT
-#undef INTERVAL
-#undef DEF_FOR_ALL_TYPES
 
 #endif
