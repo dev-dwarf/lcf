@@ -1,5 +1,39 @@
 #include "lcf_win32.h"
 
+global b32 Win32_got_sys_info;
+global SYSTEM_INFO Win32_sys_info;
+
+u32 Win32_GetPageSize() {
+    if (!Win32_got_sys_info) {
+        GetSystemInfo(&Win32_sys_info);
+        Win32_got_sys_info = 1;
+    }
+    return Win32_sys_info.dwPageSize;
+}
+
+LCF_MEMORY_RESERVE_MEMORY(Win32_Reserve) {
+    u64 snapped = size;
+    snapped += LCF_MEMORY_RESERVE_SIZE - 1;
+    snapped -= snapped & LCF_MEMORY_RESERVE_SIZE;
+    return VirtualAlloc(0, snapped, MEM_RESERVE, PAGE_NOACCESS);
+}
+
+LCF_MEMORY_COMMIT_MEMORY(Win32_Commit) {
+    u64 snapped = size;
+    snapped += LCF_MEMORY_COMMIT_SIZE - 1;
+    snapped -= snapped & LCF_MEMORY_COMMIT_SIZE;
+    void* p = VirtualAlloc(memory, snapped, MEM_COMMIT, PAGE_READWRITE);
+    return p != 0;
+}
+
+LCF_MEMORY_DECOMMIT_MEMORY(Win32_Decommit) {
+    VirtualFree(memory, size, MEM_DECOMMIT);
+}
+
+LCF_MEMORY_FREE_MEMORY(Win32_Free) {
+    VirtualFree(memory, 0, MEM_RELEASE);
+}
+
 str8 win32_load_entire_file(Arena *arena, str8 filepath) {
     str8 fileString = {0};
 
@@ -38,6 +72,8 @@ str8 win32_load_entire_file(Arena *arena, str8 filepath) {
     return fileString;
 }
 
+
+
 internal void win32_read_block(HANDLE file, void* block, u64 block_size) {
     chr8 *ptr = (chr8*) block;
     chr8 *opl = ptr + block_size;
@@ -68,7 +104,7 @@ u64 win32_get_file_write_time(str8 filepath) {
     /* FILETIME struct is 64 bits.
        REF: https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-filetime
     */
-    ASSERT(sizeof(FILETIME) == 8);
+    ASSERTSTATIC(sizeof(FILETIME) == 8, filetimeStruct);
     
     union {
         u64 u;
@@ -85,3 +121,20 @@ u64 win32_get_file_write_time(str8 filepath) {
 
     return write_time.u;
 }
+
+global s64 win32_PerfFreq;
+void win32_init_timing(void) {
+    QueryPerformanceFrequency((LARGE_INTEGER*) &win32_PerfFreq);
+}
+
+f32 win32_get_seconds_elapsed(s64 start, s64 end) {
+    f32 result = (((f32)(end-start))/(f32)win32_PerfFreq);
+    return result;
+}
+
+s64 win32_get_wall_clock(void) {
+    s64 result;
+    QueryPerformanceCounter((LARGE_INTEGER*) &result);
+    return result;
+}
+

@@ -26,7 +26,7 @@ Prn8 Prn8_set_output_file(Prn8 p, FILE* file) {
 
 #define Prn8_MAKE_SPACE_FOR_TABS_AND_AUTO_NEWLINE()                     \
     b32 auto_newline = (ctx->flags & MANUAL_NEWLINE) == 0;              \
-    i32 tabs = ctx->tabs;                                               \
+    s32 tabs = ctx->tabs;                                               \
                                                                         \
     if (auto_newline) {                                                 \
         len_to_write += 1; /* Need extra char to write newline */       \
@@ -104,7 +104,7 @@ void Prn8_newline(Prn8* ctx) {
 /* Format primitive types */
 /* TODO(lcf): floating point (oh christ). */
 union integer64 {
-    i64 i;
+    s64 i;
     u64 u;
 };
 internal inline void Prn8_integer_custom(Prn8 *ctx, union integer64 in, u16 width, u16 size, b16 is_signed) {
@@ -232,12 +232,12 @@ internal inline void Prn8_integer_custom(Prn8 *ctx, union integer64 in, u16 widt
 }
 
 #define DEFINE_Prn8_SIGNED(bits)                                    \
-    void Prn8_i##bits##_custom(Prn8 *ctx, i##bits i, u16 width) {   \
+    void Prn8_s##bits##_custom(Prn8 *ctx, s##bits i, u16 width) {   \
         union integer64 in;                                         \
         in.i = i;                                                   \
         Prn8_integer_custom(ctx, in, width, bits, true);            \
     }                                                               \
-    void Prn8_i##bits(Prn8 *ctx, i##bits i) {                       \
+    void Prn8_s##bits(Prn8 *ctx, s##bits i) {                       \
         union integer64 in;                                         \
         in.i = i;                                                   \
         Prn8_integer_custom(ctx, in, 1, bits, true);                \
@@ -278,11 +278,11 @@ void Prn8_end_same_line(Prn8 *ctx) {
     Prn8_newline(ctx);
 }
 
-void Prn8_add_tabs(Prn8* ctx, i32 tabs) {
+void Prn8_add_tabs(Prn8* ctx, s32 tabs) {
     ctx->tabs += tabs;
 }
 
-void Prn8_del_tabs(Prn8* ctx, i32 tabs) {
+void Prn8_del_tabs(Prn8* ctx, s32 tabs) {
     ctx->tabs = CLAMPBOTTOM(ctx->tabs-tabs, 0);
 }
 
@@ -290,7 +290,8 @@ internal void Prn8_write_buffer_file(Prn8* ctx) {
     void *raw;
     u32 len;
     raw = ctx->arena+sizeof(Arena);
-    len = ctx->arena->pos;
+
+    len = (u32) ctx->arena->pos;
     
     fprintf(ctx->file, "%.*s", len, (chr8*) raw);
 }

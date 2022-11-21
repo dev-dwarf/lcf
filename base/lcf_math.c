@@ -24,7 +24,7 @@ f64 f64_lerp(f64 a, f64 b, f64 p) {
     return a + (b-a)*p;
 }
 f32 f32_angle_difference(f32 a, f32 b) {
-    return fmod(180.0f + a - b, 360.0f) - 180.0f;
+    return (f32) fmod(180.0f + a - b, 360.0f) - 180.0f;
 }
 f64 f64_angle_difference(f64 a, f64 b) {
      return fmod(180.0 + a - b, 360.0) - 180.0;   

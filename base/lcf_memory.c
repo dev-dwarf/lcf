@@ -51,9 +51,8 @@ void* Arena_take_custom(Arena *a, u64 size, u64 alignment) {
 
         /* Commit memory if needed */
         if (new_pos > commited_pos) {
-            u64 new_commited_pos = next_alignment(mem + new_pos, LCF_MEMORY_COMMIT_SIZE);
-            u64 need_to_commit_size = new_commited_pos - commited_pos;
-            if (LCF_MEMORY_commit(a + commited_pos, need_to_commit_size)) {
+            u64 new_commited_pos = next_alignment(mem + new_pos, LCF_MEMORY_COMMIT_SIZE)-mem;
+            if (LCF_MEMORY_commit(a, new_commited_pos)) {
                 a->commited_pos = commited_pos = new_commited_pos;
             }
         }

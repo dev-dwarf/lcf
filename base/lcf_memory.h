@@ -43,7 +43,7 @@
 /** Backing Memory - Virtual Memory  **/
 /* Definitions for Backing Memory Functions */
 #define LCF_MEMORY_RESERVE_MEMORY(name) void* name(u64 size)
-#define LCF_MEMORY_COMMIT_MEMORY(name) b32 name(void* start_address, u64 size)
+#define LCF_MEMORY_COMMIT_MEMORY(name) b32 name(void* memory, u64 size)
 #define LCF_MEMORY_DECOMMIT_MEMORY(name) void name(void* memory, u64 size)
 #define LCF_MEMORY_FREE_MEMORY(name) void name(void* memory, u64 size)
 /* typedef LCF_MEMORY_RESERVE_MEMORY(ReserveBackingMemory); */
@@ -60,12 +60,15 @@
      return malloc(size);
  }
  internal LCF_MEMORY_COMMIT_MEMORY(_lcf_memory_default_commit) {
+     (void) size, memory;
      return 1; /* malloc commits memory automatically */
  }
  internal LCF_MEMORY_DECOMMIT_MEMORY(_lcf_memory_default_decommit) {
+     (void) size, memory;
      return;
  }
  internal LCF_MEMORY_FREE_MEMORY(_lcf_memory_default_free) {
+     (void) size;
      free(memory);
  }
  
@@ -129,7 +132,7 @@ void* Arena_take_custom(Arena *a, u64 size, u64 alignment);
 void* Arena_take_zero(Arena *a, u64 size);
 void* Arena_take_zero_custom(Arena *a, u64 size, u64 alignment);
 #define Arena_take_array(a, type, count) ((type*) Arena_take(a, sizeof(type)*count))
-#define Arena_take_array_zero(a, type, count) ((type*) Arena_take(a, sizeof(type)*count))
+#define Arena_take_array_zero(a, type, count) ((type*) Arena_take_zero(a, sizeof(type)*count))
 
 /* Reset arena to a certain position */
 void Arena_reset(Arena *a, u64 pos);

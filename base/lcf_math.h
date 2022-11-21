@@ -6,8 +6,6 @@
   
 ************************************ **/
 
-/* TODO: I am no longer happy with the use of macros here. Lets do something better. */
-
 #if !defined(LCF_MATH)
 #define LCF_MATH "1.0.0"
 
@@ -62,17 +60,17 @@ union vec4f64 {
     f64 components[4]; 
 }; typedef union vec4f64 vec4f64;
 
-union vec4i32 { 
-    struct { i32 x, y, z, w; }; 
-    struct { i32 r, g, b, a; }; 
-    i32 components[4]; 
-}; typedef union vec4i32 vec4i32;
+union vec4s32 { 
+    struct { s32 x, y, z, w; }; 
+    struct { s32 r, g, b, a; }; 
+    s32 components[4]; 
+}; typedef union vec4s32 vec4s32;
 
-union vec4i64 { 
-    struct { i64 x, y, z, w; }; 
-    struct { i64 r, g, b, a; }; 
-    i64 components[4]; 
-}; typedef union vec4i64 vec4i64;
+union vec4s64 { 
+    struct { s64 x, y, z, w; }; 
+    struct { s64 r, g, b, a; }; 
+    s64 components[4]; 
+}; typedef union vec4s64 vec4s64;
 
 typedef vec4f32 vec4;
 
@@ -88,47 +86,51 @@ union vec3f64 {
     f64 components[3]; 
 }; typedef union vec3f64 vec3f64;
 
-union vec3i32 { 
-    struct { i32 x,y,z; }; 
-    struct { i32 r,g,b; }; 
-    i32 components[3]; 
-}; typedef union vec3i32 vec3i32;
+union vec3s32 { 
+    struct { s32 x,y,z; }; 
+    struct { s32 r,g,b; }; 
+    s32 components[3]; 
+}; typedef union vec3s32 vec3s32;
 
-union vec3i64 { 
-    struct { i64 x,y,z; }; 
-    struct { i64 r,g,b; }; 
-    i64 components[3]; 
-}; typedef union vec3i64 vec3i64;
+union vec3s64 { 
+    struct { s64 x,y,z; }; 
+    struct { s64 r,g,b; }; 
+    s64 components[3]; 
+}; typedef union vec3s64 vec3s64;
 
 typedef vec3f32 vec3;
 
 union vec2f32 {        
     struct { f32 x,y; }; 
     struct { f32 u,v; }; 
-    struct { f32 w,h; }; 
+    struct { f32 w,h; };
+    struct { f32 l,r; }; 
     f32 components[2]; 
 }; typedef union vec2f32 vec2f32;
 
 union vec2f64 {        
     struct { f64 x,y; }; 
     struct { f64 u,v; }; 
-    struct { f64 w,h; }; 
+    struct { f64 w,h; };
+    struct { f64 l,r; }; 
     f64 components[2]; 
 }; typedef union vec2f64 vec2f64;
 
-union vec2i32 {        
-    struct { i32 x,y; }; 
-    struct { i32 u,v; }; 
-    struct { i32 w,h; }; 
-    i32 components[2]; 
-}; typedef union vec2i32 vec2i32;
+union vec2s32 {        
+    struct { s32 x,y; }; 
+    struct { s32 u,v; }; 
+    struct { s32 w,h; };
+    struct { s32 l,r; }; 
+    s32 components[2]; 
+}; typedef union vec2s32 vec2s32;
 
-union vec2i64 {        
-    struct { i64 x,y; }; 
-    struct { i64 u,v; }; 
-    struct { i64 w,h; }; 
-    i64 components[2]; 
-}; typedef union vec2i64 vec2i64;
+union vec2s64 {        
+    struct { s64 x,y; }; 
+    struct { s64 u,v; }; 
+    struct { s64 w,h; };
+    struct { s64 l,r; }; 
+    s64 components[2]; 
+}; typedef union vec2s64 vec2s64;
 
 typedef vec2f32 vec2;
 

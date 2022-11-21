@@ -53,7 +53,7 @@ typedef enum lcf_str8FormatFlags str8FormatFlags;
 struct lcf_str8PrintContext {
     /* Format info */
     u32 flags; 
-    i32 tabs; /* TODO(lcf): what else could go here? */
+    s32 tabs; /* TODO(lcf): what else could go here? */
     Arena* arena;
     FILE* file;
 
@@ -116,18 +116,18 @@ void Prn8_newline(Prn8* ctx);
    * BASE_64 - Use base 64 to print. WARN TODO(lcf): base 64 not supported yet.
    */
 
-void Prn8_i64(Prn8 *ctx, i64 s);
-void Prn8_i32(Prn8 *ctx, i32 s);
-void Prn8_i16(Prn8 *ctx, i16 s);
-void Prn8_i8(Prn8 *ctx, i8 s);
+void Prn8_s64(Prn8 *ctx, s64 s);
+void Prn8_s32(Prn8 *ctx, s32 s);
+void Prn8_s16(Prn8 *ctx, s16 s);
+void Prn8_s8(Prn8 *ctx, s8 s);
 void Prn8_u64(Prn8 *ctx, u64 u);
 void Prn8_u32(Prn8 *ctx, u32 u);
 void Prn8_u16(Prn8 *ctx, u16 u);
 void Prn8_u8(Prn8 *ctx, u8 u);
-void Prn8_i64_custom(Prn8 *ctx, i64 s, u16 width);
-void Prn8_i32_custom(Prn8 *ctx, i32 s, u16 width);
-void Prn8_i16_custom(Prn8 *ctx, i16 s, u16 width);
-void Prn8_i8_custom(Prn8 *ctx, i8 s, u16 width);
+void Prn8_s64_custom(Prn8 *ctx, s64 s, u16 width);
+void Prn8_s32_custom(Prn8 *ctx, s32 s, u16 width);
+void Prn8_s16_custom(Prn8 *ctx, s16 s, u16 width);
+void Prn8_s8_custom(Prn8 *ctx, s8 s, u16 width);
 void Prn8_u64_custom(Prn8 *ctx, u64 u, u16 width);
 void Prn8_u32_custom(Prn8 *ctx, u32 u, u16 width);
 void Prn8_u16_custom(Prn8 *ctx, u16 u, u16 width);
@@ -143,8 +143,8 @@ void Prn8_u8_custom(Prn8 *ctx, u8 u, u16 width);
 void Prn8_begin_same_line(Prn8 *ctx);
 void Prn8_end_same_line(Prn8 *ctx);
 void Prn8_end(Prn8* ctx);
-void Prn8_add_tabs(Prn8* ctx, i32 tabs);
-void Prn8_del_tabs(Prn8* ctx, i32 tabs);
+void Prn8_add_tabs(Prn8* ctx, s32 tabs);
+void Prn8_del_tabs(Prn8* ctx, s32 tabs);
 #define Prn8_begin_tab(ctx) Prn8_add_tabs(ctx, 1);
 #define Prn8_end_tab(ctx) Prn8_del_tabs(ctx, 1);
 

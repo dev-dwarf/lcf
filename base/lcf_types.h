@@ -36,7 +36,7 @@
 /* Bits/Flags */
 #define TEST_FLAG(fl,fi) ((fl)&(fi))
 #define SET_FLAG(fl,fi) ((fl)|=(fi))
-#define UNSET_FLAG(fl,fi) ((fl)&=~(fi))
+#define REM_FLAG(fl,fi) ((fl)&=~(fi))
 #define TOGGLE_FLAG(fl,fi) ((fl)^=(fi))
 
 /* Math  */
@@ -60,7 +60,9 @@
     #define ASSERT_KILL() (*(int*)0=0)
     #define ASSERT(C) STATEMENT( if (!(C)) { ASSERT_KILL(); })
     #define ASSERTM(C, M) ASSERT((M) && (C));
-    #define ASSERT_STATIC(C,label) u8 static_assert_##label[(C)?(-1):(1)]
+    #define ASSERTSTATIC(C,label) STATEMENT(                           \
+        u8 static_assert_##label[(C)?(1):(-1)];                         \
+        (void) static_assert_##label; )
     #define NOTIMPLEMENTED() ASSERTM(0, "Not Implemented")
     #define BADPATH(M) ASSERTM(0, M);
 #endif
@@ -83,20 +85,34 @@
 
 /** Portable, Abbreviated Primitive Types  **/
 #include <stdint.h>
-#define TYPE_MIN(t,val) read_only global t MACRO_CONCAT(t,_MIN) = ((t) val)
-#define TYPE_MAX(t,val) read_only global t MACRO_CONCAT(t,_MAX) = ((t) val)
 
 /* Signed Int */
-typedef int8_t i8;   TYPE_MIN(i8, 0x80);        TYPE_MAX(i8,0x7F);
-typedef int16_t i16; TYPE_MIN(i16, 0x8000);     TYPE_MAX(i16,0x7FFF);
-typedef int32_t i32; TYPE_MIN(i32, 0x800000);   TYPE_MAX(i32,0x7FFFFF);
-typedef int64_t i64; TYPE_MIN(i64, 0x80000000); TYPE_MAX(i64,0x7FFFFFFF);
+typedef int8_t s8;
+read_only global s8 s8_MAX = 0x7F;
+read_only global s8 s8_MIN = -1 - 0x7F;
+typedef int16_t s16;
+read_only global s16 s16_MAX = 0x7FFF;
+read_only global s16 s16_MIN = -1 - 0x7FFF;
+typedef int32_t s32;
+read_only global s32 s32_MAX = 0x7FFFFFFF;
+read_only global s32 s32_MIN = -1 - 0x7FFFFFFF;
+typedef int64_t s64;
+read_only global s64 s64_MAX = 0x7FFFFFFFFFFFFFFF;
+read_only global s64 s64_MIN = -1 - 0x7FFFFFFFFFFFFFFF;
 
 /* Unsigned Int */
-typedef uint8_t u8;   TYPE_MAX(u8, 0xFF);
-typedef uint16_t u16; TYPE_MAX(u16, 0xFFFF);
-typedef uint32_t u32; TYPE_MAX(u32, 0xFFFFFF);
-typedef uint64_t u64; TYPE_MAX(u64, 0xFFFFFFFF);
+typedef uint8_t u8;
+read_only global u8 u8_MAX = 0xFF;
+read_only global u8 u8_MIN = 0;
+typedef uint16_t u16;
+read_only global u16 u16_MAX = 0xFFFF;
+read_only global u16 u16_MIN = 0;
+typedef uint32_t u32;
+read_only global u32 u32_MAX = 0xFFFFFFFF;
+read_only global u32 u32_MIN = 0;
+typedef uint64_t u64;
+read_only global u64 u64_MAX = 0xFFFFFFFFFFFFFFFF;
+read_only global u64 u64_MIN = 0;
 
 #undef TYPE_MIN
 #undef TYPE_MAX
@@ -104,16 +120,16 @@ typedef uint64_t u64; TYPE_MAX(u64, 0xFFFFFFFF);
 /* Bool/Bits */
 typedef u8 b8;
 typedef u16 b16;
-typedef i32 b32;
-typedef i64 b64;
+typedef u32 b32;
+typedef u64 b64;
 
 /* Floating Point */
 typedef float f32; 
-read_only global f32 f32_MIN = -3.4028234664e+38;
-read_only global f32 f32_MAX = 3.4028234664e+38;
-read_only global f32 f32_EPSILON = 5.96046448e-8;
-read_only global f32 f32_TAU = 6.28318530718f;
-read_only global f32 f32_PI = 3.14159265359f;
+read_only global f32 f32_MIN = (f32)-3.4028234664e+38;
+read_only global f32 f32_MAX = (f32) 3.4028234664e+38;
+read_only global f32 f32_EPSILON = (f32) 5.96046448e-8;
+read_only global f32 f32_TAU = (f32) 6.28318530718;
+read_only global f32 f32_PI = (f32) 3.14159265359f;
 
 read_only global u32 SignF32 = 0x80000000;
 read_only global u32 ExponentF32 = 0x7F800000;
