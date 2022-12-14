@@ -58,7 +58,7 @@ void* Arena_take_custom(Arena *a, u64 size, u64 alignment) {
         }
 
         /* If enough memory is commited, set result and pos. */
-        if (new_pos < commited_pos) {
+        if (new_pos <= commited_pos) {
             result = (void*)(mem + aligned_pos);
             a->pos = new_pos;
         }

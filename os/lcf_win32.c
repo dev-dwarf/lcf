@@ -72,8 +72,6 @@ str8 win32_load_entire_file(Arena *arena, str8 filepath) {
     return fileString;
 }
 
-
-
 internal void win32_read_block(HANDLE file, void* block, u64 block_size) {
     chr8 *ptr = (chr8*) block;
     chr8 *opl = ptr + block_size;

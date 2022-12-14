@@ -66,6 +66,12 @@ str8 str8_substr(str8 s, u64 start, u64 n) {
 }
 
 /* Operations that need memory */
+str8 str8_create_size(Arena *a, u64 len) {
+    str8 s;
+    s.len = len;
+    s.str = (chr8*) Arena_take_zero(a, s.len);
+    return s;
+}
 str8 str8_copy(Arena *a, str8 s) {
     return str8_copy_custom(Arena_take(a, s.len), s);
 }
@@ -288,7 +294,7 @@ void Str8List_add_node(Str8List *list, Str8Node *n) {
     }
     list->last = n;
     list->count++;
-    list->len += n->str.len;
+    list->total_len += n->str.len;
 }
 
 void Str8List_append(Str8List *list, Str8List nodes) {
@@ -301,11 +307,7 @@ void Str8List_append(Str8List *list, Str8List nodes) {
             list->last = nodes.last;
         }
         list->count += nodes.count;
-        list->len += nodes.len;
-        /* Following line relic from when nodes was Str8List* */
-        /* It seems clearer to not modify nodes, most of this code,
-           assumes immutable usage anyway. Time will tell. */
-        /* MemoryZero(nodes, sizeof(Str8List)); */
+        list->total_len += nodes.total_len;
     }
 }
 
@@ -320,7 +322,7 @@ str8 Str8List_join(Arena *arena, Str8List list, str8 prefix, str8 seperator, str
     /* Calculate size */
     str8 result = {0};
     result.len = prefix.len +
-        list.len + seperator.len*((list.count > 1)? list.count - 1: 0) +
+        list.total_len + seperator.len*((list.count > 1)? list.count - 1: 0) +
         postfix.len;
     result.str = Arena_take_array(arena, chr8, result.len);
 

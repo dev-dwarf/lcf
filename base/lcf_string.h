@@ -17,11 +17,11 @@
 
 /** ASCII                            **/
 typedef char chr8;
-struct lcf_str8 { /* TODO(lcf): spread operator macro?? */
+struct str8 { /* TODO(lcf): spread operator macro?? */
     u64 len;
     chr8 *str;
 };
-typedef struct lcf_str8 str8;
+typedef struct str8 str8;
 
 #define str8_PRINTF_ARGS(s) (int)(s).len, (s).str
 
@@ -37,11 +37,12 @@ str8 str8_first(str8 s, u64 len); /* return first len chars of str */
 str8 str8_last(str8 s, u64 len); /* return last len chars of str */
 str8 str8_cut_first(str8 s, u64 len); /* return str with len chars removed from the start */
 str8 str8_cut_last(str8 s, u64 len); /* return str with len chars removed from the end */
-str8 str8_skip(str8 s, u64 len); /* skip over len chars of str */
+str8 str8_skip(str8 s, u64 len); /* skip over len chars of str, str[len, s.len) */
 str8 str8_substr_between(str8 s, u64 start, u64 end); /* return str[start, end) as a str8 */
 str8 str8_substr(str8 s, u64 start, u64 n); /* return str[start, start+n-1] */
 
 /* Operations that need memory */
+str8 str8_create_size(Arena *a, u64 len);
 str8 str8_copy(Arena *a, str8 s);
 str8 str8_copy_custom(void* memory, str8 s);
 str8 str8_concat(Arena *a, str8 s1, str8 s2);
@@ -56,7 +57,7 @@ b32 chr8_is_whitespace(chr8 c);
 b32 str8_contains_char(str8 s, chr8 c);
 b32 str8_contains_substring(str8 s, str8 sub);
 b32 str8_contains_delimiter(str8 s, str8 delims);
-#define LCF_STRING_NO_MATCH 0x80000000
+#define LCF_STRING_NO_MATCH 0x8000000000000000
 u64 str8_char_location(str8 s, chr8 c);
 u64 str8_substring_location(str8 s, str8 sub);
 u64 str8_delimiter_location(str8 s, str8 delims); 
@@ -110,18 +111,19 @@ str8 str8_pop_at_first_whitespace(str8 *src);
         )
 #define str8_iter_pop_substring(s, split_by) str8_iter_pop_substring_custom(s, split_by, sub)
 
-#define str8_iter_pop_delimiter_custom(s, delims, iter)                 \
+#define str8_iter_pop_delimiter_custom(s, delims, iter)            \
     for (                                                               \
-        str8 MACRO_VAR(_str) = (s),                                     \
+        str8 MACRO_VAR(_str) = (s),                                          \
             MACRO_VAR(_delims) = (delims),                              \
             iter = str8_pop_at_first_delimiter(&MACRO_VAR(_str),MACRO_VAR(_delims)) \
             ;                                                           \
-        (!str8_is_empty(iter) || !str8_is_empty(MACRO_VAR(_str)))      \
+        (!str8_is_empty(iter) || !str8_is_empty(MACRO_VAR(_str)))                      \
             ;                                                           \
         iter = str8_pop_at_first_delimiter(&MACRO_VAR(_str),MACRO_VAR(_delims)) \
         )
 #define str8_iter_pop_delimiter(s, delims) str8_iter_pop_delimiter_custom(s, delims, sub)
-
+global str8 str8_NEWLINE = str8_lit("\n");
+#define str8_iter_pop_line(s) str8_iter_pop_delimiter_custom(s, str8_NEWLINE, line)
 
 #define str8_iter_pop_whitespace_custom(s, iter)                    \
     for (                                                           \
@@ -135,19 +137,25 @@ str8 str8_pop_at_first_whitespace(str8 *src);
 #define str8_iter_pop_whitespace(s) str8_iter_pop_whitespace_custom(s, sub)
 
 /** Str8 Lists                       **/
-
-struct lcf_str8Node {
-    struct lcf_str8Node *next;
-    struct lcf_str8 str;
+struct Str8Node {
+    struct Str8Node *next;
+    struct str8 str;
 };
-struct lcf_str8List {
-    struct lcf_str8Node *first;
-    struct lcf_str8Node *last;
+struct Str8List {
+    struct Str8Node *first;
+    struct Str8Node *last;
     u64 count;
-    u64 len;
+    u64 total_len;
+
+    #if defined(__cplusplus)
+    void AddNode(Str8Node *n);
+    void Append(Str8List nodes);
+    void Add(Arena* arena, str8 str);
+    str8 Join(Arena arena, str8 prefix, str8 seperator, str8 postfix);
+    #endif
 };
-typedef struct lcf_str8Node Str8Node;
-typedef struct lcf_str8List Str8List;
+typedef struct Str8Node Str8Node;
+typedef struct Str8List Str8List;
 
 /* List manipulation */
 void Str8List_add_node(Str8List *list, Str8Node *n);

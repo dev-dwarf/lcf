@@ -38,6 +38,7 @@
 #define SET_FLAG(fl,fi) ((fl)|=(fi))
 #define REM_FLAG(fl,fi) ((fl)&=~(fi))
 #define TOGGLE_FLAG(fl,fi) ((fl)^=(fi))
+#define TO_FLAG(I) (1 << I)
 
 /* Math  */
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -76,7 +77,7 @@
 #define MACRO_EXPAND(S) #S
 #define _MACRO_CONCAT(S1,S2) S1##S2
 #define MACRO_CONCAT(S1,S2) _MACRO_CONCAT(S1,S2)
-#define MACRO_VAR(var) var##__FILE__##__LINE__
+#define MACRO_VAR(var) MACRO_CONCAT(var, __LINE__)
 #define SWAP(T,a,b) do{ T t__ = a; a = b; b = t__; }while(0)
 
 

@@ -133,6 +133,8 @@ void* Arena_take_zero(Arena *a, u64 size);
 void* Arena_take_zero_custom(Arena *a, u64 size, u64 alignment);
 #define Arena_take_array(a, type, count) ((type*) Arena_take(a, sizeof(type)*count))
 #define Arena_take_array_zero(a, type, count) ((type*) Arena_take_zero(a, sizeof(type)*count))
+#define Arena_take_struct(a, type) ((type*) Arena_take(a, sizeof(type)))
+#define Arena_take_struct_zero(a, type) ((type*) Arena_take_zero(a, sizeof(type)))
 
 /* Reset arena to a certain position */
 void Arena_reset(Arena *a, u64 pos);
