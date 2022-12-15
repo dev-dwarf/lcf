@@ -158,11 +158,10 @@ typedef struct lcf_ArenaSession ArenaSession;
 ArenaSession ArenaSession_begin(Arena *a);
 void ArenaSession_end(ArenaSession s);
 
-#define ARENA_SESSION(arena, code) {                                    \
-        ArenaSession session##__FILE__##__LINE__ = ArenaSession_begin(arena); \
-        {code}                                                          \
-        ArenaSession_end(session##__FILE__##__LINE__);                  \
-    }
+#define ARENA_SESSION(arena) DEFER_LOOP( \
+        ArenaSession MACRO_VAR(session) = ArenaSession_begin(arena),    \
+        ArenaSession_end(MACRO_VAR(session)) \
+        )
 
 /** ******************************** **/
 #endif

@@ -48,10 +48,14 @@ str8 win32_load_entire_file(Arena *arena, str8 filepath) {
     DWORD flags_and_attributes = 0;
     HANDLE template_file = 0;
 
-    /* TODO: WARN: CreateFileA is not recommended, as file paths can be unicode and have
+    HANDLE file = INVALID_HANDLE_VALUE;
+    ARENA_SESSION(arena) {
+        str8 c_filepath = str8_concat(arena, filepath, str8_lit("\0"));
+        /* TODO: WARN: CreateFileA is not recommended, as file paths can be unicode and have
        other characters. Once we have unicode support use UTF-16 for windows file paths. */
-    HANDLE file = CreateFileA(filepath.str, desired_access, share_mode, &security_attributes,
+        file = CreateFileA(c_filepath.str, desired_access, share_mode, &security_attributes,
                               creation_disposition, flags_and_attributes, template_file);
+    }
 
     if (file != INVALID_HANDLE_VALUE) {
         LARGE_INTEGER size_int;

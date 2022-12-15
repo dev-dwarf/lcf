@@ -35,8 +35,7 @@ str8 str8_empty(void);
 /* Basic/fast operations */
 str8 str8_first(str8 s, u64 len); /* return first len chars of str */
 str8 str8_last(str8 s, u64 len); /* return last len chars of str */
-str8 str8_cut_first(str8 s, u64 len); /* return str with len chars removed from the start */
-str8 str8_cut_last(str8 s, u64 len); /* return str with len chars removed from the end */
+str8 str8_cut(str8 s, u64 len); /* cut len chars from str, str[0, len) */
 str8 str8_skip(str8 s, u64 len); /* skip over len chars of str, str[len, s.len) */
 str8 str8_substr_between(str8 s, u64 start, u64 end); /* return str[start, end) as a str8 */
 str8 str8_substr(str8 s, u64 start, u64 n); /* return str[start, start+n-1] */
@@ -68,6 +67,23 @@ str8 str8_trim_postfix(str8 s, str8 postfix);
 str8 str8_trim_whitespace(str8 s);
 str8 str8_trim_whitespace_front(str8 s);
 str8 str8_trim_whitespace_back(str8 s);
+
+/* Rendering */
+/* TODO(lcf): printing primitive types to str8 */
+struct Str8Render { /* TODO(lcf) shit name */
+    Arena *arena;
+    /* other options:
+       specify length
+       always show sign
+       left align
+       right align
+       hex, oct, decimal
+    */
+};
+typedef struct Str8Render Str8Render;
+str8 str8_u64(Str8Render* options, u64 u);
+str8 str8_f64(Str8Render* options, f64 u);
+/* etc */
 
 /* Iterations */
 #define str8_iter_custom(s, i, c)                           \
@@ -159,8 +175,25 @@ typedef struct Str8List Str8List;
 
 /* List manipulation */
 void Str8List_add_node(Str8List *list, Str8Node *n);
-void Str8List_append(Str8List *list, Str8List nodes);
 void Str8List_add(Arena *arena, Str8List *list, str8 str);
+void Str8List_prepend(Str8List *list, Str8List nodes);
+void Str8List_append(Str8List *list, Str8List nodes);
+void Str8List_insert(Str8List *list, Str8Node *prev, Str8List nodes);
+
+/* Split, Search, Replace */
+struct Str8ListSearch {
+    str8 str;
+    Str8Node *node;
+    u64 index;
+};
+typedef struct Str8ListSearch Str8ListSearch;
+Str8ListSearch Str8List_find_next(Str8Node *head, str8 str);
+void Str8List_split(Arena *arena, Str8List *list, Str8ListSearch *pos);
+void Str8List_split_remove(Arena *arena, Str8List *list, Str8ListSearch *pos);
+void Str8List_replace_next(Arena *arena, Str8List *list, str8 find, str8 replace);
+
+/* Rendering */
+/* TODO(lcf): shouldn't live here, but Str8List print to console, 
 str8 Str8List_join(Arena *arena, Str8List list, str8 prefix, str8 seperator, str8 postfix);
 
 /** Unicode                          **/

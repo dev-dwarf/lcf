@@ -39,12 +39,7 @@ str8 str8_last(str8 s, u64 len) {
     RET_STR8(s.str + s.len - len_clamped, len_clamped);
 }
 
-str8 str8_cut_first(str8 s, u64 len) {
-    u64 len_clamped = CLAMPTOP(len, s.len);
-    RET_STR8(s.str + len_clamped, s.len - len_clamped);
-}
-
-str8 str8_cut_last(str8 s, u64 len) {
+str8 str8_cut(str8 s, u64 len) {
     u64 len_clamped = CLAMPTOP(len, s.len);
     RET_STR8(s.str, s.len - len_clamped);
 }
@@ -297,25 +292,82 @@ void Str8List_add_node(Str8List *list, Str8Node *n) {
     list->total_len += n->str.len;
 }
 
+void Str8List_add(Arena *arena, Str8List *list, str8 str) {
+    Str8Node *n = Arena_take_array(arena, Str8Node, 1);
+    n->str = str;
+    n->next = 0;
+    Str8List_add_node(list, n);
+}
+
+void Str8List_prepend(Str8List *list, Str8List nodes) {
+    if (nodes.first != 0) {
+        /* If the list is empty, replace it with nodes */
+        if (list->last == 0) {
+            *list = nodes;
+        } else {
+            ASSERTM(nodes.last->next == 0, "nodes.last should be the end of the Str8List.")
+            nodes.last->next = list->first;
+            list->first = nodes.first;
+            list->count += nodes.count;
+            list->total_len += nodes.total_len;
+        }
+    }
+}
+
 void Str8List_append(Str8List *list, Str8List nodes) {
     if (nodes.first != 0) {
         /* If the list is empty, replace it with nodes */
         if (list->last == 0) {
             *list = nodes;
         } else {
+            ASSERTM(nodes.last->next == 0, "nodes.last should be the end of the Str8List.")
             list->last->next = nodes.first;
             list->last = nodes.last;
+            list->count += nodes.count;
+            list->total_len += nodes.total_len;
         }
-        list->count += nodes.count;
-        list->total_len += nodes.total_len;
     }
 }
 
-void Str8List_add(Arena *arena, Str8List *list, str8 str) {
-    Str8Node *n = Arena_take_array(arena, Str8Node, 1);
-    n->str = str;
-    n->next = 0;
-    Str8List_add_node(list, n);
+void Str8List_insert(Str8List *list, Str8Node *prev, Str8List nodes) {
+    if (nodes.first != 0) {
+        if (list->last == 0) {
+            *list = nodes;
+        } else if (prev != 0) {
+            ASSERTM(nodes.last->next == 0, "nodes.last should be the end of the Str8List.")
+            nodes.last->next = prev->next;
+            prev->next = nodes.first;
+            list->count += nodes.count;
+            list->total_len += nodes.total_len;
+        }
+    }
+}
+
+Str8ListSearch Str8List_find_next(Str8Node *head, str8 str) {
+    Str8ListSearch out = {str, 0};
+    for (Str8Node* n = head; n != 0; n = n->next) {
+        out.index = str8_substring_location(n->str, str);
+        if (out.index != LCF_STRING_NO_MATCH) {
+            out.node = n;
+            break;
+        }
+    }
+    
+    return out;
+}
+
+void Str8List_split(Arena *arena, Str8List *list, Str8ListSearch pos) {
+    if (pos.node != 0) {
+        Str8Node *n = Arena_take_struct_zero(arena, Str8Node);
+        n->str = str8_skip(pos.node->str, pos.index);
+        n->next = pos.node->next;
+        pos.node->str = str8_cut(pos.node->str, pos.index);
+        pos.node->next = n;
+    }
+}
+
+void Str8List_split_remove(Arena *arena, Str8List *list, Str8ListSearch *pos) {
+    /* TODO: might need function for advancing through a string */
 }
 
 str8 Str8List_join(Arena *arena, Str8List list, str8 prefix, str8 seperator, str8 postfix) {
