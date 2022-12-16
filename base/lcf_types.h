@@ -68,7 +68,7 @@
     #define BADPATH(M) ASSERTM(0, M);
 #endif
 
-/* Misc */
+/* Macros */
 #define ARRAY_LENGTH(A) (sizeof(A)/sizeof(*(A)))
 #define PTR_TO_INT(P) (unsigned long long)((char*)p - (char*)0)
 #define INT_TO_PTR(I) (void*)((char*)0 + (n))
@@ -80,7 +80,7 @@
 #define MACRO_VAR(var) MACRO_CONCAT(var, __LINE__)
 #define SWAP(T,a,b) do{ T t__ = a; a = b; b = t__; }while(0)
 #define DEFER_LOOP(start,end) start; for(int ___i = (0); ___i == 0; ___i += 1, end)
-
+    
 /** ******************************** **/
 
 

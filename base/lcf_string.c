@@ -18,7 +18,7 @@ str8 str8_from_pointer_range(chr8 *p1, chr8 *p2) {
 }
 str8 str8_from_cstring(chr8 *cstr) {
     chr8* p2 = cstr;
-    for (; *p2 != 0; p2++)
+    while(*p2++ != 0)
         ;
     return str8_from_pointer_range(cstr, p2);
 }
@@ -67,8 +67,14 @@ str8 str8_create_size(Arena *a, u64 len) {
     s.str = (chr8*) Arena_take_zero(a, s.len);
     return s;
 }
+
 str8 str8_copy(Arena *a, str8 s) {
     return str8_copy_custom(Arena_take(a, s.len), s);
+}
+
+str8 str8_copy_cstring(Arena *a, chr8 *c) {
+    str8 cstr = str8_from_cstring(c);
+    return str8_copy(a, cstr);
 }
 
 str8 str8_copy_custom(void* memory, str8 s) {
@@ -77,6 +83,18 @@ str8 str8_copy_custom(void* memory, str8 s) {
     copy.str = (chr8*) memory;
     memcpy(memory, s.str, s.len);
     return copy;
+}
+
+str8 str8_from_cstring_custom(str8 dest, chr8 *c) {
+    str8 out = {0};
+    out.str = dest.str;
+    while (out.len < dest.len && *c != '\0') {
+        out.len++;
+        *dest.str++ = *c++;
+    }
+    out.len++;
+    *dest.str = *c;
+    return out;
 }
 
 str8 str8_concat(Arena *a, str8 s1, str8 s2) {
@@ -96,15 +114,15 @@ b32 str8_eq(str8 a, str8 b) {
 }
 
 b32 str8_has_prefix(str8 s, str8 prefix) {
-    return (prefix.len < s.len) &&
+    return (prefix.len <= s.len) &&
         (str8_not_empty(prefix)) &&
         (memcmp(s.str, prefix.str, prefix.len) == 0);
 }
 
-b32 str8_has_postfix(str8 s, str8 postfix) {
-    return (postfix.len < s.len) &&
-        (str8_not_empty(postfix)) && 
-        (memcmp(s.str+(s.len-postfix.len), postfix.str, postfix.len) == 0);
+b32 str8_has_suffix(str8 s, str8 suffix) {
+    return (suffix.len <= s.len) &&
+        (str8_not_empty(suffix)) && 
+        (memcmp(s.str+(s.len-suffix.len), suffix.str, suffix.len) == 0);
 }
 
 b32 chr8_is_whitespace(chr8 c) {
@@ -194,9 +212,9 @@ str8 str8_trim_prefix(str8 s, str8 prefix) {
     return s;
 }
 
-str8 str8_trim_postfix(str8 s, str8 postfix) {
-    if (str8_has_postfix(s, postfix)) {
-        s.len = s.len - postfix.len;
+str8 str8_trim_suffix(str8 s, str8 suffix) {
+    if (str8_has_suffix(s, suffix)) {
+        s.len -= suffix.len;
     }
     return s;
 }
@@ -299,6 +317,36 @@ void Str8List_add(Arena *arena, Str8List *list, str8 str) {
     Str8List_add_node(list, n);
 }
 
+Str8Node* Str8List_pop_node(Str8List *list) {
+    Str8Node *out = 0;
+    if (list->first == list->last) {
+        *list = {0};
+    } else if (list->first != 0) {
+        Str8Node *new_last = list->first->next;
+        while (new_last->next != list->last) {
+            new_last = new_last->next;
+        }
+        out = list->last;
+        new_last->next = 0;
+        list->total_len -= list->last->str.len;
+        list->count--;
+        list->last = new_last;
+    }
+    return out;
+}
+
+Str8List Str8List_pop(Str8List *list, u64 n) {
+    Str8List out = {0};
+    for (u64 i = 0; i < n; i++) {
+        Str8Node *pop = Str8List_pop_node(list);
+        Str8List_add_node(&out, pop);
+        if (pop == 0) {
+            break;
+        }
+    }
+    return out;
+}
+
 void Str8List_prepend(Str8List *list, Str8List nodes) {
     if (nodes.first != 0) {
         /* If the list is empty, replace it with nodes */
@@ -343,6 +391,14 @@ void Str8List_insert(Str8List *list, Str8Node *prev, Str8List nodes) {
     }
 }
 
+void Str8List_skip(Str8List *list, u32 n) {
+    for (u32 i = 0; (list->count > 0) && (i < n); i++) {
+        list->count--;
+        list->total_len -= list->first->str.len;
+        list->first = list->first->next;
+    }
+}
+
 Str8ListSearch Str8List_find_next(Str8Node *head, str8 str) {
     Str8ListSearch out = {str, 0};
     for (Str8Node* n = head; n != 0; n = n->next) {
@@ -370,12 +426,12 @@ void Str8List_split_remove(Arena *arena, Str8List *list, Str8ListSearch *pos) {
     /* TODO: might need function for advancing through a string */
 }
 
-str8 Str8List_join(Arena *arena, Str8List list, str8 prefix, str8 seperator, str8 postfix) {
+str8 Str8List_join(Arena *arena, Str8List list, str8 prefix, str8 seperator, str8 suffix) {
     /* Calculate size */
     str8 result = {0};
     result.len = prefix.len +
         list.total_len + seperator.len*((list.count > 1)? list.count - 1: 0) +
-        postfix.len;
+        suffix.len;
     result.str = Arena_take_array(arena, chr8, result.len);
 
     /* Fill result */
@@ -384,7 +440,7 @@ str8 Str8List_join(Arena *arena, Str8List list, str8 prefix, str8 seperator, str
     MemoryCopy(ptr, prefix.str, prefix.len);
     ptr += prefix.len;
 
-    for (Str8Node *node = list.first; node; node = node->next) {
+    for (Str8Node *node = list.first; node != 0; node = node->next) {
         MemoryCopy(ptr, node->str.str, node->str.len);
         ptr += node->str.len;
         if (node != list.last) {
@@ -393,10 +449,21 @@ str8 Str8List_join(Arena *arena, Str8List list, str8 prefix, str8 seperator, str
         }
     }
     
-    MemoryCopy(ptr, postfix.str, postfix.len);
-    ptr += postfix.len;
+    MemoryCopy(ptr, suffix.str, suffix.len);
+    ptr += suffix.len;
 
     return result;
+}
+
+/* Makes copies of nodes, but not of their strings */
+Str8List Str8List_copy(Arena *arena, Str8List list) {
+    Str8List copy = {0};
+    for (Str8Node *n = list.first; n != 0; n = n->next) {
+        Str8Node *copyn = Arena_take_struct_zero(arena, Str8Node);
+        copyn->str = n->str;
+        Str8List_add_node(&copy, copyn);
+    }
+    return copy;
 }
 
 /** ******************************** **/
