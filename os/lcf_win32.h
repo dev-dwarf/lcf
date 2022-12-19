@@ -41,6 +41,7 @@ LCF_MEMORY_FREE_MEMORY(Win32_Free);
    inaccessible using this API. Would mostly be a problem when letting end user
    pass filepaths. */
 str8 win32_load_entire_file(Arena *arena, str8 filepath);
+void win32_write_file(str8 filepath, Str8List text);
 u64 win32_get_file_write_time(str8 filepath);
 b32 win32_file_was_written(str8 filepath, u64* last_write_time); 
 

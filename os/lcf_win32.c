@@ -90,6 +90,28 @@ internal void win32_read_block(HANDLE file, void* block, u64 block_size) {
     }
 }
 
+void win32_write_file(str8 filepath, Str8List text) {
+    HANDLE file = CreateFileA(filepath.str, FILE_APPEND_DATA | GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+
+    ASSERT(file != INVALID_HANDLE_VALUE);
+    u32 toWrite = 0;
+    u32 written = 0;
+    u32 bytesWrittenTotal = 0;
+    Str8Node* n = text.first;
+    for (u64 i = 0; i < text.count; i++, n = n->next) {
+        toWrite = (u32) n->str.len;
+        written = 0;
+
+        while (written != toWrite) {
+            WriteFile(file, n->str.str, toWrite, (LPDWORD) &written, 0);
+        }
+            
+        bytesWrittenTotal += written;
+    }
+    ASSERT(bytesWrittenTotal == text.total_len);
+    CloseHandle(file);
+}
+
 b32 win32_file_was_written(str8 filepath, u64* last_write_time) {
     u64 new_write_time = win32_get_file_write_time(filepath);
     if (new_write_time != *last_write_time) {

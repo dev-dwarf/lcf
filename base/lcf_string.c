@@ -18,8 +18,8 @@ str8 str8_from_pointer_range(chr8 *p1, chr8 *p2) {
 }
 str8 str8_from_cstring(chr8 *cstr) {
     chr8* p2 = cstr;
-    while(*p2++ != 0)
-        ;
+    while(*p2 != 0)
+        p2++;
     return str8_from_pointer_range(cstr, p2);
 }
 
@@ -72,17 +72,27 @@ str8 str8_copy(Arena *a, str8 s) {
     return str8_copy_custom(Arena_take(a, s.len), s);
 }
 
-str8 str8_copy_cstring(Arena *a, chr8 *c) {
-    str8 cstr = str8_from_cstring(c);
-    return str8_copy(a, cstr);
-}
-
 str8 str8_copy_custom(void* memory, str8 s) {
     str8 copy;
     copy.len = s.len;
     copy.str = (chr8*) memory;
     memcpy(memory, s.str, s.len);
     return copy;
+}
+
+str8 str8_copy_first_n(Arena *a, str8 s, u64 n) {
+    s = str8_first(s, n);
+    return str8_copy(a, s);
+}
+
+str8 str8_copy_first_n_custom(void* memory, str8 s, u64 n) {
+    s = str8_first(s, n);
+    return str8_copy_custom((chr8*) memory, s);
+}
+
+str8 str8_copy_cstring(Arena *a, chr8 *c) {
+    str8 cstr = str8_from_cstring(c);
+    return str8_copy(a, cstr);
 }
 
 str8 str8_from_cstring_custom(str8 dest, chr8 *c) {
@@ -115,13 +125,13 @@ b32 str8_eq(str8 a, str8 b) {
 
 b32 str8_has_prefix(str8 s, str8 prefix) {
     return (prefix.len <= s.len) &&
-        (str8_not_empty(prefix)) &&
+        (str8_not_empty(s)) &&
         (memcmp(s.str, prefix.str, prefix.len) == 0);
 }
 
 b32 str8_has_suffix(str8 s, str8 suffix) {
     return (suffix.len <= s.len) &&
-        (str8_not_empty(suffix)) && 
+        (str8_not_empty(s)) && 
         (memcmp(s.str+(s.len-suffix.len), suffix.str, suffix.len) == 0);
 }
 

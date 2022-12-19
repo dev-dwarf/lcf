@@ -43,8 +43,10 @@ str8 str8_substr(str8 s, u64 start, u64 n); /* return str[start, start+n-1] */
 /* Operations that need memory */
 str8 str8_create_size(Arena *a, u64 len);
 str8 str8_copy(Arena *a, str8 s);
-str8 str8_copy_cstring(Arena *a, chr8 *c);
 str8 str8_copy_custom(void* memory, str8 s);
+str8 str8_copy_first_n(Arena *a, str8 s, u64 n);
+str8 str8_copy_first_n_custom(void* memory, str8 s, u64 n);
+str8 str8_copy_cstring(Arena *a, chr8 *c);
 str8 str8_copy_custom_cstring(void* memory, chr8 *c);
 str8 str8_concat(Arena *a, str8 s1, str8 s2);
 
