@@ -1,14 +1,3 @@
-/** ************************************
-  LCF, Created (September 03, 2022)
-
-  Purpose:
-  Virtual memory operations.
-  Arena Memory management primitive using virtual memory.
-
-  TODO:
-  Pool Memory?
-
-************************************ **/
 #if !defined(LCF_MEMORY)
 #define LCF_MEMORY "1.0.0"
 
@@ -46,8 +35,6 @@
 #define LCF_MEMORY_COMMIT_MEMORY(name) b32 name(void* memory, u64 size)
 #define LCF_MEMORY_DECOMMIT_MEMORY(name) void name(void* memory, u64 size)
 #define LCF_MEMORY_FREE_MEMORY(name) void name(void* memory, u64 size)
-/* typedef LCF_MEMORY_RESERVE_MEMORY(ReserveBackingMemory); */
-/* typedef LCF_MEMORY_CHANGE_MEMORY(ChangeBackingMemory); */
 
 /* Provide default backing memory functions using stdlib to help get off the ground
    NOTE(lcf): These should absolutely be provided by OS layer to take advantage of

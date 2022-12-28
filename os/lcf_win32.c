@@ -1,24 +1,24 @@
 #include "lcf_win32.h"
 
-global b32 Win32_got_sys_info;
-global SYSTEM_INFO Win32_sys_info;
+global b32 win32_got_sys_info;
+global SYSTEM_INFO win32_sys_info;
 
-u32 Win32_GetPageSize() {
-    if (!Win32_got_sys_info) {
-        GetSystemInfo(&Win32_sys_info);
-        Win32_got_sys_info = 1;
+u64 win32_GetPageSize() {
+    if (!win32_got_sys_info) {
+        GetSystemInfo(&win32_sys_info);
+        win32_got_sys_info = true;
     }
-    return Win32_sys_info.dwPageSize;
+    return (u64) win32_sys_info.dwPageSize;
 }
 
-LCF_MEMORY_RESERVE_MEMORY(Win32_Reserve) {
+LCF_MEMORY_RESERVE_MEMORY(win32_Reserve) {
     u64 snapped = size;
     snapped += LCF_MEMORY_RESERVE_SIZE - 1;
     snapped -= snapped & LCF_MEMORY_RESERVE_SIZE;
     return VirtualAlloc(0, snapped, MEM_RESERVE, PAGE_NOACCESS);
 }
 
-LCF_MEMORY_COMMIT_MEMORY(Win32_Commit) {
+LCF_MEMORY_COMMIT_MEMORY(win32_Commit) {
     u64 snapped = size;
     snapped += LCF_MEMORY_COMMIT_SIZE - 1;
     snapped -= snapped & LCF_MEMORY_COMMIT_SIZE;
@@ -26,11 +26,11 @@ LCF_MEMORY_COMMIT_MEMORY(Win32_Commit) {
     return p != 0;
 }
 
-LCF_MEMORY_DECOMMIT_MEMORY(Win32_Decommit) {
+LCF_MEMORY_DECOMMIT_MEMORY(win32_Decommit) {
     VirtualFree(memory, size, MEM_DECOMMIT);
 }
 
-LCF_MEMORY_FREE_MEMORY(Win32_Free) {
+LCF_MEMORY_FREE_MEMORY(win32_Free) {
     VirtualFree(memory, 0, MEM_RELEASE);
 }
 
@@ -90,26 +90,40 @@ internal void win32_read_block(HANDLE file, void* block, u64 block_size) {
     }
 }
 
-void win32_write_file(str8 filepath, Str8List text) {
+b32 win32_write_file(str8 filepath, Str8List text) {
+    u64 bytesWrittenTotal = 0;
+    
     HANDLE file = CreateFileA(filepath.str, FILE_APPEND_DATA | GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+    
+    if (file != INVALID_HANDLE_VALUE) {
+        u32 toWrite = 0;
+        u32 written = 0;
+        Str8Node* n = text.first;
+        for (u64 i = 0; i < text.count; i++, n = n->next) {
+            toWrite = (u32) n->str.len;
+            written = 0;
 
-    ASSERT(file != INVALID_HANDLE_VALUE);
-    u32 toWrite = 0;
-    u32 written = 0;
-    u32 bytesWrittenTotal = 0;
-    Str8Node* n = text.first;
-    for (u64 i = 0; i < text.count; i++, n = n->next) {
-        toWrite = (u32) n->str.len;
-        written = 0;
-
-        while (written != toWrite) {
-            WriteFile(file, n->str.str, toWrite, (LPDWORD) &written, 0);
-        }
+            if (!WriteFile(file, n->str.str, toWrite, (LPDWORD) &written, 0)) {
+                break;
+            }
             
-        bytesWrittenTotal += written;
+            bytesWrittenTotal += written;
+
+            /* NOTE(lcf): Note sure this is really needed in practice. */
+            if (n->str.len > u32_MAX) {
+                toWrite = n->str.len >> 32;
+                written = 0;
+                chr8 *back_half = &(n->str.str[u32_MAX]);
+                while (written != toWrite) {
+                    WriteFile(file, back_half, toWrite, (LPDWORD) &written, 0);
+                }
+                bytesWrittenTotal += written;
+            }
+        }
+        CloseHandle(file);
     }
-    ASSERT(bytesWrittenTotal == text.total_len);
-    CloseHandle(file);
+    
+    return bytesWrittenTotal == text.total_len;
 }
 
 b32 win32_file_was_written(str8 filepath, u64* last_write_time) {

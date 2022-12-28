@@ -1,14 +1,3 @@
-/** ************************************
-    LCF, Created (September 04, 2022)
-
-    Purpose:
-    Length based string library.
-    Lots of procedures for trimming, searching, and iterating immutable strings.
-    Lists of strings.
-    ASCII (str8)
-    UNICODE (str32)
-  
-    ************************************ **/
 #if !defined(LCF_STRING)
 #define LCF_STRING "1.0.0"
 
@@ -17,7 +6,7 @@
 
 /** ASCII                            **/
 typedef char chr8;
-struct str8 { /* TODO(lcf): spread operator macro?? */
+struct str8 { 
     u64 len;
     chr8 *str;
 };
@@ -91,14 +80,14 @@ str8 str8_f64(Str8Render* options, f64 u);
 
 /* Iterations */
 #define str8_iter_custom(s, i, c)                           \
-    u64 i = 0;                                              \
+    s64 i = 0;                                              \
     chr8 c = s.str[i];                                      \
     for (; (i < s.len); i++, c = s.str[i])
 
 #define str8_iter(s) str8_iter_custom(s, i, c)
 
 #define str8_iter_backward_custom(s, i, c)                  \
-    u64 i = s.len-1;                                        \
+    s64 i = s.len-1;                                        \
     chr8 c = s.str[i];                                      \
     for (; (i >= 0); i--, c = s.str[i])
 
@@ -200,9 +189,7 @@ void Str8List_split_remove(Arena *arena, Str8List *list, Str8ListSearch *pos);
 Str8ListSearch Str8List_replace_next(Arena *arena, Str8List *list, str8 find, str8 replace);
 /* NOTE: ^ above should return the node position of what was replaced */
 
-
 /* Rendering */
-/* TODO(lcf): shouldn't live here, but Str8List print to console, */
 str8 Str8List_join(Arena *arena, Str8List list, str8 prefix, str8 seperator, str8 suffix);
 Str8List Str8List_copy_nodes(Arena *arena, Str8List list);
 

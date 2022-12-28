@@ -1,11 +1,3 @@
-/** ************************************
-  LCF, Created (September 02, 2022)
-
-  Description:
-  Context cracking based on compiler/arch information.
-  "Borrowed" from Metadesk.
-  
-************************************ **/
 #ifndef LCF_CONTEXT
 #define LCF_CONTEXT "1.0.0"
 

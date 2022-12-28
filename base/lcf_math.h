@@ -1,11 +1,3 @@
-/** ************************************
-  LCF, Created (September 02, 2022)
-
-  Description:
-  Math stuff; constants, types, functions, macros.
-  
-************************************ **/
-
 #if !defined(LCF_MATH)
 #define LCF_MATH "1.0.0"
 
