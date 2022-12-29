@@ -22,10 +22,10 @@ str8 str8_from_cstring(chr8 *cstr);
 global str8 str8_EMPTY = str8_lit("");
 
 /* Basic/fast operations */
-str8 str8_first(str8 s, u64 len); /* return first len chars of str */
-str8 str8_last(str8 s, u64 len); /* return last len chars of str */
-str8 str8_cut(str8 s, u64 len); /* cut len chars from str, str[0, len) */
+str8 str8_first(str8 s, u64 len); /* return first len chars of str, str[0, len) */
 str8 str8_skip(str8 s, u64 len); /* skip over len chars of str, str[len, s.len) */
+str8 str8_cut(str8 s, u64 len); /* cut len chars from str, str[0, s.len-len) */
+str8 str8_last(str8 s, u64 len); /* return last len chars of str, str[s.len-len, s.len) */
 str8 str8_substr_between(str8 s, u64 start, u64 end); /* return str[start, end) as a str8 */
 str8 str8_substr(str8 s, u64 start, u64 n); /* return str[start, start+n-1] */
 
@@ -82,7 +82,7 @@ str8 str8_f64(Str8Render* options, f64 u);
 #define str8_iter_custom(s, i, c)                           \
     s64 i = 0;                                              \
     chr8 c = s.str[i];                                      \
-    for (; (i < s.len); i++, c = s.str[i])
+    for (; (i < (s64) s.len); i++, c = s.str[i])
 
 #define str8_iter(s) str8_iter_custom(s, i, c)
 

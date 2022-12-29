@@ -34,6 +34,7 @@ Arena* Arena_create_default(void) {
 }
 
 void Arena_destroy(Arena *a) {
+    *a = {0};
     LCF_MEMORY_free(a, a->size);
 }
 
@@ -95,7 +96,11 @@ void Arena_reset(Arena *a, u64 pos) {
 }
 
 void Arena_reset_all(Arena *a) {
-    Arena_reset(a, 0);
+    if (LCF_MEMORY_DEBUG_CLEAR) {
+        /* Clear memory between pos and a->pos */
+        MemorySet((void*) ((u64)a+pos), LCF_MEMORY_ARENA_CLEAR, a->pos - pos);
+    }
+    a->pos = 0;
 }
 
 void Arena_reset_decommit(Arena *a, u64 pos) {

@@ -115,9 +115,6 @@ typedef uint64_t u64;
 read_only global u64 u64_MAX = 0xFFFFFFFFFFFFFFFF;
 read_only global u64 u64_MIN = 0;
 
-#undef TYPE_MIN
-#undef TYPE_MAX
-
 /* Bool/Bits */
 typedef u8 b8;
 typedef u16 b16;

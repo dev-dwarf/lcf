@@ -44,7 +44,6 @@ str8 str8_cut(str8 s, u64 len) {
     RET_STR8(s.str, s.len - len_clamped);
 }
 
-/* NOTE(lcf): equivalent to str8_cut_first, but feels different */
 str8 str8_skip(str8 s, u64 len) {
     u64 len_clamped = CLAMPTOP(len, s.len);
     RET_STR8(s.str + len_clamped, s.len - len_clamped);
@@ -429,11 +428,16 @@ void Str8List_split(Arena *arena, Str8List *list, Str8ListSearch pos) {
         n->next = pos.node->next;
         pos.node->str = str8_cut(pos.node->str, pos.index);
         pos.node->next = n;
+        list->count++;
+        list->total_len += n->str.len;
     }
 }
 
 void Str8List_split_remove(Arena *arena, Str8List *list, Str8ListSearch *pos) {
     /* TODO: might need function for advancing through a string */
+    (void)(arena);
+    (void)(list);
+    (void)(pos);
 }
 
 str8 Str8List_join(Arena *arena, Str8List list, str8 prefix, str8 seperator, str8 suffix) {
