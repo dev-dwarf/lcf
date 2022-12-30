@@ -96,11 +96,7 @@ void Arena_reset(Arena *a, u64 pos) {
 }
 
 void Arena_reset_all(Arena *a) {
-    if (LCF_MEMORY_DEBUG_CLEAR) {
-        /* Clear memory between pos and a->pos */
-        MemorySet((void*) ((u64)a+pos), LCF_MEMORY_ARENA_CLEAR, a->pos - pos);
-    }
-    a->pos = 0;
+    Arena_reset(a, sizeof(Arena));
 }
 
 void Arena_reset_decommit(Arena *a, u64 pos) {
