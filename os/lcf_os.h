@@ -1,3 +1,4 @@
+#include "../lcf/base/lcf_context.h"
 #if OS_WINDOWS
 #include "lcf_win32.h"
 #endif

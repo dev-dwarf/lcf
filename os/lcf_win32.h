@@ -20,7 +20,7 @@
 #define HR(HRESULT_PROC) STATEMENT(HRESULT hr = (HRESULT_PROC); ASSERT(SUCCEEDED(hr)););
 
 /* Memory */
-u32 win32_GetPageSize();
+u64 win32_GetPageSize();
 LCF_MEMORY_RESERVE_MEMORY(win32_Reserve);
 LCF_MEMORY_COMMIT_MEMORY(win32_Commit);
 LCF_MEMORY_DECOMMIT_MEMORY(win32_Decommit);
