@@ -307,30 +307,45 @@ str8 str8_pop_at_first_whitespace(str8 *src) {
 /** Str8 Lists                       **/
 
 /* List manipulation */
+Str8Node* Str8Node_from(Arena *arena, str8 str) {
+    Str8Node *n = Arena_take_array(arena, Str8Node, 1);
+    n->str = str;
+    n->next = 0;
+    return n;
+}
+
 void Str8List_add_node(Str8List *list, Str8Node *n) {
-    if (list->last) {
-        list->last->next = n;
-    } else {
-        ASSERTM(list->count == 0, "Str8List.count must be 0 for empty list. (Try clearing the struct first)");
+    if (list->count == 0) {
         list->first = n;
+    } else {
+        list->last->next = n;
     }
     list->last = n;
     list->count++;
     list->total_len += n->str.len;
 }
 
+void Str8List_prepend_node(Str8List *list, Str8Node *n) {
+    if (list->count == 0) {
+        list->last = n;
+    } else {
+        n->next = list->first;
+    }
+    list->first = n;
+    list->count++;
+    list->total_len += n->str.len;
+}
+
 void Str8List_add(Arena *arena, Str8List *list, str8 str) {
-    Str8Node *n = Arena_take_array(arena, Str8Node, 1);
-    n->str = str;
-    n->next = 0;
-    Str8List_add_node(list, n);
+    Str8List_add_node(list, Str8Node_from(arena, str));
 }
 
 Str8Node* Str8List_pop_node(Str8List *list) {
     Str8Node *out = 0;
-    if (list->first == list->last) {
+    if (list->count == 1) {
+        out = list->first;
         *list = {0};
-    } else if (list->first != 0) {
+    } else if (list->count != 0) {
         Str8Node *new_last = list->first->next;
         while (new_last->next != list->last) {
             new_last = new_last->next;
@@ -357,9 +372,9 @@ Str8List Str8List_pop(Str8List *list, u64 n) {
 }
 
 void Str8List_prepend(Str8List *list, Str8List nodes) {
-    if (nodes.first != 0) {
+    if (nodes.count != 0) {
         /* If the list is empty, replace it with nodes */
-        if (list->last == 0) {
+        if (list->count == 0) {
             *list = nodes;
         } else {
             ASSERTM(nodes.last->next == 0, "nodes.last should be the end of the Str8List.")
@@ -372,9 +387,9 @@ void Str8List_prepend(Str8List *list, Str8List nodes) {
 }
 
 void Str8List_append(Str8List *list, Str8List nodes) {
-    if (nodes.first != 0) {
+    if (nodes.count != 0) {
         /* If the list is empty, replace it with nodes */
-        if (list->last == 0) {
+        if (list->count == 0) {
             *list = nodes;
         } else {
             ASSERTM(nodes.last->next == 0, "nodes.last should be the end of the Str8List.")
@@ -387,8 +402,8 @@ void Str8List_append(Str8List *list, Str8List nodes) {
 }
 
 void Str8List_insert(Str8List *list, Str8Node *prev, Str8List nodes) {
-    if (nodes.first != 0) {
-        if (list->last == 0) {
+    if (nodes.count != 0) {
+        if (list->count == 0) {
             *list = nodes;
         } else if (prev != 0) {
             ASSERTM(nodes.last->next == 0, "nodes.last should be the end of the Str8List.")
@@ -400,71 +415,61 @@ void Str8List_insert(Str8List *list, Str8Node *prev, Str8List nodes) {
     }
 }
 
-void Str8List_skip(Str8List *list, u32 n) {
-    for (u32 i = 0; (list->count > 0) && (i < n); i++) {
-        list->count--;
-        list->total_len -= list->first->str.len;
-        list->first = list->first->next;
-    }
-}
+Str8Node* Str8List_skip_node(Str8List *list) {
+    Str8Node* out = 0;
 
-Str8ListSearch Str8List_find_next(Str8Node *head, str8 str) {
-    Str8ListSearch out = {str, 0};
-    for (Str8Node* n = head; n != 0; n = n->next) {
-        out.index = str8_substring_location(n->str, str);
-        if (out.index != LCF_STRING_NO_MATCH) {
-            out.node = n;
-            break;
-        }
+    if (list->count == 1) {
+        list->last = 0;
     }
-    
+    if (list->first) {
+        out = list->first;
+        list->first = out->next;
+        out->next = 0;
+        list->count--;
+        list->total_len -= out->str.len;
+    }
+
     return out;
 }
 
-void Str8List_split(Arena *arena, Str8List *list, Str8ListSearch pos) {
-    if (pos.node != 0) {
-        Str8Node *n = Arena_take_struct_zero(arena, Str8Node);
-        n->str = str8_skip(pos.node->str, pos.index);
-        n->next = pos.node->next;
-        pos.node->str = str8_cut(pos.node->str, pos.index);
-        pos.node->next = n;
-        list->count++;
-        list->total_len += n->str.len;
+Str8List Str8List_skip(Str8List *list, u32 n) {
+    Str8List out = {0};
+    for (u32 i = 0; (list->count > 0) && (i < n); i++) {
+        Str8Node *f = list->first;
+        list->count--;
+        list->total_len -= f->str.len;
+        list->first = list->first->next;
+        Str8List_add_node(&out, f);
     }
+    return out;
 }
 
-void Str8List_split_remove(Arena *arena, Str8List *list, Str8ListSearch *pos) {
-    /* TODO: might need function for advancing through a string */
-    (void)(arena);
-    (void)(list);
-    (void)(pos);
-}
-
-str8 Str8List_join(Arena *arena, Str8List list, str8 prefix, str8 seperator, str8 suffix) {
+str8 Str8List_join(Arena *arena, Str8List list, Str8ListJoin join) {
     /* Calculate size */
     str8 result = {0};
-    result.len = prefix.len +
-        list.total_len + seperator.len*((list.count > 1)? list.count - 1: 0) +
-        suffix.len;
+    result.len = join.prefix.len +
+        list.total_len + join.seperator.len*((list.count > 1)? list.count - 1: 0) +
+        join.suffix.len;
     result.str = Arena_take_array(arena, chr8, result.len);
 
     /* Fill result */
     chr8 *ptr = result.str;
 
-    MemoryCopy(ptr, prefix.str, prefix.len);
-    ptr += prefix.len;
+    MemoryCopy(ptr, join.prefix.str, join.prefix.len);
+    ptr += join.prefix.len;
 
-    for (Str8Node *node = list.first; node != 0; node = node->next) {
+    Str8Node *node = list.first;
+    for (u64 i = 0; i < list.count; i++, node = node->next) {
         MemoryCopy(ptr, node->str.str, node->str.len);
         ptr += node->str.len;
         if (node != list.last) {
-            MemoryCopy(ptr, seperator.str, seperator.len);
-            ptr += seperator.len;
+            MemoryCopy(ptr, join.seperator.str, join.seperator.len);
+            ptr += join.seperator.len;
         }
     }
     
-    MemoryCopy(ptr, suffix.str, suffix.len);
-    ptr += suffix.len;
+    MemoryCopy(ptr, join.suffix.str, join.suffix.len);
+    ptr += join.suffix.len;
 
     return result;
 }
@@ -472,7 +477,8 @@ str8 Str8List_join(Arena *arena, Str8List list, str8 prefix, str8 seperator, str
 /* Makes copies of nodes, but not of their strings */
 Str8List Str8List_copy(Arena *arena, Str8List list) {
     Str8List copy = {0};
-    for (Str8Node *n = list.first; n != 0; n = n->next) {
+    Str8Node *n = list.first;
+    for (u64 i = 0; i < list.count; i++, n = n->next) {
         Str8Node *copyn = Arena_take_struct_zero(arena, Str8Node);
         copyn->str = n->str;
         Str8List_add_node(&copy, copyn);

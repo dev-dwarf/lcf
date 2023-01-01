@@ -174,7 +174,8 @@ void Str8List_append(Str8List *list, Str8List nodes);
 Str8Node* Str8List_pop_node(Str8List *list);
 Str8List Str8List_pop(Str8List *list, u32 n);
 void Str8List_insert(Str8List *list, Str8Node *prev, Str8List nodes);
-void Str8List_skip(Str8List *list, u32 n);
+Str8Node* Str8List_skip_node(Str8List *list);
+Str8List Str8List_skip(Str8List *list, u32 n);
 
 /* Split, Search, Replace */
 struct Str8ListSearch {
@@ -190,7 +191,13 @@ Str8ListSearch Str8List_replace_next(Arena *arena, Str8List *list, str8 find, st
 /* NOTE: ^ above should return the node position of what was replaced */
 
 /* Rendering */
-str8 Str8List_join(Arena *arena, Str8List list, str8 prefix, str8 seperator, str8 suffix);
+struct Str8ListJoin {
+    str8 prefix;
+    str8 seperator;
+    str8 suffix;
+};
+typedef struct Str8ListJoin Str8ListJoin;
+str8 Str8List_join(Arena *arena, Str8List list, Str8ListJoin join);
 Str8List Str8List_copy_nodes(Arena *arena, Str8List list);
 
 /** Unicode                          **/
