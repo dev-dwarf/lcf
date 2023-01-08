@@ -31,10 +31,10 @@
 
 /** Backing Memory - Virtual Memory  **/
 /* Definitions for Backing Memory Functions */
-#define LCF_MEMORY_RESERVE_MEMORY(name) void* name(u64 size)
-#define LCF_MEMORY_COMMIT_MEMORY(name) b32 name(void* memory, u64 size)
-#define LCF_MEMORY_DECOMMIT_MEMORY(name) void name(void* memory, u64 size)
-#define LCF_MEMORY_FREE_MEMORY(name) void name(void* memory, u64 size)
+#define LCF_MEMORY_RESERVE_MEMORY(name) void* name(upr size)
+#define LCF_MEMORY_COMMIT_MEMORY(name) b32 name(void* memory, upr size)
+#define LCF_MEMORY_DECOMMIT_MEMORY(name) void name(void* memory, upr size)
+#define LCF_MEMORY_FREE_MEMORY(name) void name(void* memory, upr size)
 
 /* Provide default backing memory functions using stdlib to help get off the ground
    NOTE(lcf): These should absolutely be provided by OS layer to take advantage of
@@ -100,13 +100,35 @@
     to be used again by the arena. These are wrapped by the ARENA_SESSION macro and
     ArenaSession_(begin|end) procs to cover the most common scenario.
                                      **/
-struct lcf_Arena {
-    u64 pos;
+struct Arena {
+    upr pos;
     u64 size;
-    u64 alignment;
-    u64 commited_pos;
+    s32 alignment;
+    s32 commited_pos; /* In pages (LCF_MEMORY_COMMIT_SIZE) */
+
+#ifdef __cplusplus
+private:
+    Arena() {};
+public:
+    static Arena* create_default(void); 
+    static Arena* create(u64 size);
+    void destroy(); 
+    void* take(u64 size);
+    void* take(u64 size, u32 alignment);
+    void* take_zero(u64 size);
+    void* take_zero(u64 size, u32 alignment);
+    template<typename T> void* take_struct();
+    template<typename T> void* take_struct_zero();
+    template<typename T> void* take_array(u64 count);
+    template<typename T> void* take_array_zero(u64 count);
+    void reset(u64 pos);
+    void reset();
+    void reset_decommit(u64 pos);
+    void reset_decommit();
+
+    #endif
 };
-typedef struct lcf_Arena Arena;
+typedef struct Arena Arena;
 
 /* Create and destroy Arenas */
 Arena* Arena_create_default(void); 
@@ -115,9 +137,9 @@ void Arena_destroy(Arena *a);
 
 /* Take memory from the arena */
 void* Arena_take(Arena *a, u64 size);
-void* Arena_take_custom(Arena *a, u64 size, u64 alignment);
+void* Arena_take_custom(Arena *a, u64 size, u32 alignment);
 void* Arena_take_zero(Arena *a, u64 size);
-void* Arena_take_zero_custom(Arena *a, u64 size, u64 alignment);
+void* Arena_take_zero_custom(Arena *a, u64 size, u32 alignment);
 #define Arena_take_array(a, type, count) ((type*) Arena_take(a, sizeof(type)*count))
 #define Arena_take_array_zero(a, type, count) ((type*) Arena_take_zero(a, sizeof(type)*count))
 #define Arena_take_struct(a, type) ((type*) Arena_take(a, sizeof(type)))
@@ -126,25 +148,23 @@ void* Arena_take_zero_custom(Arena *a, u64 size, u64 alignment);
 /* Reset arena to a certain position */
 void Arena_reset(Arena *a, u64 pos);
 void Arena_reset_all(Arena *a);
-void Arena_reset_decommit_custom(Arena *a, u64 pos, u64 commit_size);
 void Arena_reset_decommit(Arena *a, u64 pos);
 void Arena_reset_all_decommit(Arena *a);
 
 /* Resize blocks without destroying data.
    (only a performance savings when old_memory was most recently taken block) */
 void* Arena_resize(Arena *a, void* old_memory, u64 old_size, u64 new_size);
-void* Arena_resize_custom(Arena *a, void* old_memory, u64 old_size, u64 new_size, u64 alignment);
+void* Arena_resize_custom(Arena *a, void* old_memory, u64 old_size, u64 new_size, u32 alignment);
 
 /* Arena sessions - wraps resetting memory */
-struct lcf_ArenaSession {
+struct ArenaSession {
     Arena *arena;
     u64 session_start;
 };
-typedef struct lcf_ArenaSession ArenaSession;
+typedef struct ArenaSession ArenaSession;
 
 ArenaSession ArenaSession_begin(Arena *a);
 void ArenaSession_end(ArenaSession s);
-
 #define ARENA_SESSION(arena) DEFER_LOOP( \
         ArenaSession MACRO_VAR(session) = ArenaSession_begin(arena),    \
         ArenaSession_end(MACRO_VAR(session)) \

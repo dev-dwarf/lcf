@@ -1,11 +1,11 @@
 #include "lcf_memory.h"
 #define B_PTR(p) (u8*)(p)
 
-internal b32 is_power_of_2(u64 x) {
+internal b32 is_power_of_2(upr x) {
     return ((x & (x-1)) == 0);
 }
 
-internal u64 next_alignment(u64 ptr, u64 alignment) {
+internal u64 next_alignment(upr ptr, upr alignment) {
     ASSERTM(is_power_of_2(alignment), "Alignments must be a power of 2.");
 
     /* Fast replacement for mod because alignment is power of 2 */
@@ -34,25 +34,24 @@ Arena* Arena_create_default(void) {
 }
 
 void Arena_destroy(Arena *a) {
-    *a = {0};
     LCF_MEMORY_free(a, a->size);
 }
 
-void* Arena_take_custom(Arena *a, u64 size, u64 alignment) {
+void* Arena_take_custom(Arena *a, u64 size, u32 alignment) {
     void* result = 0;
     
     /* Align pos pointer to check if "size" can fit */
-    u64 mem = (u64) a;
-    u64 aligned_pos = next_alignment(mem + a->pos, alignment) - mem;
-    u64 new_pos = aligned_pos + size;
+    upr mem = (upr) a;
+    upr aligned_pos = next_alignment(mem + a->pos, alignment) - mem;
+    upr new_pos = aligned_pos + size;
         
     /* Check that there is space */
     if (new_pos < a->size) {
-        u64 commited_pos = a->commited_pos;
+        upr commited_pos = a->commited_pos;
 
         /* Commit memory if needed */
         if (new_pos > commited_pos) {
-            u64 new_commited_pos = next_alignment(mem + new_pos, LCF_MEMORY_COMMIT_SIZE)-mem;
+            upr new_commited_pos = next_alignment(mem + new_pos, LCF_MEMORY_COMMIT_SIZE)-mem;
             if (LCF_MEMORY_commit(a, new_commited_pos)) {
                 a->commited_pos = commited_pos = new_commited_pos;
             }
@@ -72,7 +71,7 @@ void* Arena_take(Arena *a, u64 size) {
     return Arena_take_custom(a, size, LCF_MEMORY_ALIGNMENT);
 }
 
-void* Arena_take_zero_custom(Arena *a, u64 size, u64 alignment) {
+void* Arena_take_zero_custom(Arena *a, u64 size, u32 alignment) {
     void* mem = Arena_take_custom(a, size, alignment);
     MemoryZero(mem, size);
     return mem;
@@ -102,21 +101,21 @@ void Arena_reset_all(Arena *a) {
 void Arena_reset_decommit(Arena *a, u64 pos) {
     Arena_reset(a, pos);
 
-    /* Decommit everything except what is needed or the basic amount */
-    if (a->commited_pos > LCF_MEMORY_COMMIT_SIZE) {
-        u64 mem = (u64) a;
-        u64 needed_pos = next_alignment(mem + a->pos, LCF_MEMORY_COMMIT_SIZE) - mem;
-        u64 over_commited = a->commited_pos - needed_pos;
+    /* Decommit everything except what is needed, or one page */
+    if (a->commited_pos > 1) {
+        upr mem = (upr) a;
+        upr needed_pos = (next_alignment(mem + a->pos, LCF_MEMORY_COMMIT_SIZE) - mem) ;
+        upr over_commited = a->commited_pos - needed_pos;
         LCF_MEMORY_decommit(a+needed_pos, over_commited);
-        a->commited_pos = needed_pos;
+        a->commited_pos = needed_pos / LCF_MEMORY_COMMIT_SIZE;
     }
 }
 
 void Arena_reset_all_decommit(Arena *a) {
     Arena_reset(a, 0);
 
-    /* Decommit everything except basic amount */
-    LCF_MEMORY_decommit(a+LCF_MEMORY_COMMIT_SIZE, a->commited_pos-LCF_MEMORY_COMMIT_SIZE);
+    /* Decommit everything except one page */
+    LCF_MEMORY_decommit(a+LCF_MEMORY_COMMIT_SIZE, LCF_MEMORY_COMMIT_SIZE*MAX(a->commited_pos-1, 0));
     a->commited_pos = 0;
 }
 
@@ -159,5 +158,54 @@ ArenaSession ArenaSession_begin(Arena *a) {
 void ArenaSession_end(ArenaSession s) {
     Arena_reset(s.arena, s.session_start);
 }
+
+
+#ifdef __cplusplus
+Arena* Arena::create_default(void) {
+    return Arena_create_default();
+}
+Arena* Arena::create(u64 size) {
+    return Arena_create(size);
+}
+void Arena::destroy() {
+    Arena_destroy(this);
+}
+void* Arena::take(u64 sz) {
+    return Arena_take(this, sz);
+}
+void* Arena::take(u64 sz, u32 align) {
+    return Arena_take_custom(this, sz, align);
+}
+void* Arena::take_zero(u64 sz) {
+    return Arena_take_zero(this, sz);
+}
+void* Arena::take_zero(u64 sz, u32 align) {
+    return Arena_take_zero_custom(this, sz, align);
+}
+template<typename T> void* Arena::take_struct() {
+    return Arena_take(this, sizeof(T));
+}
+template<typename T> void* Arena::take_struct_zero() {
+    return Arena_take_zero(this, sizeof(T));
+}
+template<typename T> void* Arena::take_array(u64 count) {
+    return Arena_take(this, sizeof(T)*count);
+}
+template<typename T> void* Arena::take_array_zero(u64 count) {
+    return Arena_take_zero(this, sizeof(T)*count);
+}
+void Arena::reset(u64 ps) {
+    Arena_reset(this, ps);
+}
+void Arena::reset() {
+    Arena_reset_all(this);
+}
+void Arena::reset_decommit(u64 ps) {
+    Arena_reset_decommit(this, ps);
+}
+void Arena::reset_decommit() {
+    Arena_reset_all_decommit(this);
+}
+#endif
 /** **************************************/
 #undef B_PTR

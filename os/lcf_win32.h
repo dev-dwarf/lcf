@@ -18,6 +18,7 @@
 #undef ASSERT
 #define ASSERT(C) STATEMENT( if(!(C)) __debugbreak();)
 #define HR(HRESULT_PROC) STATEMENT(HRESULT hr = (HRESULT_PROC); ASSERT(SUCCEEDED(hr)););
+#define SAFE_RELEASE(ComObj) do { if (ComObj) { (ComObj)->Release(); (ComObj) = 0; }} while(0);
 
 /* Memory */
 u64 win32_GetPageSize();

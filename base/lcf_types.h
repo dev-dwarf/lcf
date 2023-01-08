@@ -1,14 +1,6 @@
-/** ************************************
-  LCF, Created (September 02, 2022)
-
-  Description:
-  Basic types, constants and macros.
-  
-************************************ **/
 #if !defined(LCF_TYPES)
 #define LCF_TYPES "1.0.0"
 
-/** Convenience Macros               **/
 /* Keywords */
 #define global static
 #define local static
@@ -24,21 +16,20 @@
 #define false 0
 #endif
 
-/* #if OS_WINDOWS */
-/* #pragma section(".roglob", read) */
-/* #define read_only __declspec(allocate(".roglob")) */
-/* #else */
-/* /\* TODO(rjf): figure out if this benefit is possible on non-Windows *\/ */
-/* #define read_only */
-/* #endif */
-#define read_only 
+#if OS_WINDOWS
+#pragma section(".roglob", read)
+#define read_only __declspec(allocate(".roglob"))
+#else
+/* TODO(rjf): figure out if this benefit is possible on non-Windows */
+#define read_only
+#endif
 
 /* Bits/Flags */
 #define TEST_FLAG(fl,fi) ((fl)&(fi))
 #define SET_FLAG(fl,fi) ((fl)|=(fi))
 #define REM_FLAG(fl,fi) ((fl)&=~(fi))
 #define TOGGLE_FLAG(fl,fi) ((fl)^=(fi))
-#define TO_FLAG(I) (1 << I)
+#define FLAG(I) (1 << (I))
 
 /* Math  */
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -68,12 +59,13 @@
     #define BADPATH(M) ASSERTM(0, M);
 #endif
 
-/* Macros */
+/* Misc */
 #define ARRAY_LENGTH(A) (sizeof(A)/sizeof(*(A)))
 #define PTR_TO_INT(P) (unsigned long long)((char*)p - (char*)0)
 #define INT_TO_PTR(I) (void*)((char*)0 + (n))
 #define MEMBER(T,M) (((T*)0)->m)
 #define MEMBER_OFFSET(T,M) PTR_TO_INT(&MEMBER(T,M))
+#define STRINGIFY(SYMB) #SYMB
 #define MACRO_EXPAND(S) #S
 #define _MACRO_CONCAT(S1,S2) S1##S2
 #define MACRO_CONCAT(S1,S2) _MACRO_CONCAT(S1,S2)
@@ -115,12 +107,6 @@ typedef uint64_t u64;
 read_only global u64 u64_MAX = 0xFFFFFFFFFFFFFFFF;
 read_only global u64 u64_MIN = 0;
 
-/* Bool/Bits */
-typedef u8 b8;
-typedef u16 b16;
-typedef u32 b32;
-typedef u64 b64;
-
 /* Floating Point */
 typedef float f32; 
 read_only global f32 f32_MIN = (f32)-3.4028234664e+38;
@@ -144,5 +130,17 @@ f64 f64_neg_inf(void);
 f64 f64_abs(f64 f);
 f64 f64_sign(f64 f);
 
+/* Bool/Bits */
+typedef u8 b8;
+typedef u16 b16;
+typedef u32 b32;
+typedef u64 b64;
+
+/* Pointers */
+typedef intptr_t spr;
+typedef uintptr_t upr;
+
+
+    
 /** ******************************** **/
 #endif

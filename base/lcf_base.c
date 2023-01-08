@@ -8,7 +8,7 @@
 ************************************ **/
 
 #include "lcf_types.c"
-#include "lcf_math.c"
+/* #include "lcf_math.c" */
 #include "lcf_memory.c"
 #include "lcf_string.c"
 #include "lcf_string_tools.c"
