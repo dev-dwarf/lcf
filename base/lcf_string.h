@@ -7,41 +7,83 @@
 /** ASCII                            **/
 typedef char chr8;
 struct str8 { 
-    u64 len;
+    s64 len;
     chr8 *str;
+
+    #ifdef __cplusplus
+    /* Create str8s */
+    str8();
+    str8(s64 len, chr8* s);
+    str8(chr8 *s, s64 len);
+    str8(chr8 *p1, chr8 *p2);
+    str8(chr8 *p);
+    str8(const chr8 *p);
+    str8(Arena *a, s64 l);
+    operator chr8*() const { return str; }
+    operator s64() const { return len; }
+    b32 operator==(const str8& r);
+    /* Basic/fast operations */
+    str8 first(s64 l);
+    str8 skip(s64 l);
+    str8 cut(s64 l);
+    str8 last(s64 l);
+    str8 substr_between(s64 start, s64 end);
+    str8 substr(s64 start, s64 n);
+    /* Operations that need memory */
+    str8 copy(Arena *a);
+    str8 copy(void* memory);
+    str8 concat(Arena *a, str8 s2);
+    
+    /* Comparisons / Predicates */
+    b32 is_empty();
+    b32 not_empty();
+    b32 eq(str8 b);
+    b32 has_prefix(str8 prefix);
+    b32 has_suffix(str8 suffix);
+    b32 contains_char(chr8 c);
+    b32 contains_substring(str8 sub);
+    b32 contains_delimiter(str8 delims);
+    s64 char_location(chr8 c);
+    s64 substring_location(str8 sub);
+    s64 delimiter_location(str8 delims); 
+    /* Additional Operations */
+    str8 trim_prefix(str8 prefix);
+    str8 trim_suffix(str8 suffix);
+    str8 trim_whitespace();
+    str8 trim_whitespace_front();
+    str8 trim_whitespace_back();
+
+    #endif
 };
 typedef struct str8 str8;
 
 #define str8_PRINTF_ARGS(s) (int)(s).len, (s).str
 
 /* Create str8s */
-str8 str8_from(chr8* s, u64 len);
+str8 str8_from(chr8* s, s64 len);
 str8 str8_from_pointer_range(chr8 *p1, chr8 *p2);
 str8 str8_from_cstring(chr8 *cstr);
-#define str8_lit(s) str8_from((chr8*)(s),(u64)sizeof(s)-1) /* -1 to exclude null character */
+
+#define str8_lit(s) str8_from((chr8*)(s),(s64)sizeof(s)-1) /* -1 to exclude null character */
 global str8 str8_EMPTY = str8_lit("");
 
 /* Basic/fast operations */
-str8 str8_first(str8 s, u64 len); /* return first len chars of str, str[0, len) */
-str8 str8_skip(str8 s, u64 len); /* skip over len chars of str, str[len, s.len) */
-str8 str8_cut(str8 s, u64 len); /* cut len chars from str, str[0, s.len-len) */
-str8 str8_last(str8 s, u64 len); /* return last len chars of str, str[s.len-len, s.len) */
-str8 str8_substr_between(str8 s, u64 start, u64 end); /* return str[start, end) as a str8 */
-str8 str8_substr(str8 s, u64 start, u64 n); /* return str[start, start+n-1] */
+str8 str8_first(str8 s, s64 len); /* return first len chars of str, str[0, len) */
+str8 str8_skip(str8 s, s64 len); /* skip over len chars of str, str[len, s.len) */
+str8 str8_cut(str8 s, s64 len); /* cut len chars from str, str[0, s.len-len) */
+str8 str8_last(str8 s, s64 len); /* return last len chars of str, str[s.len-len, s.len) */
+str8 str8_substr_between(str8 s, s64 start, s64 end); /* return str[start, end) as a str8 */
+str8 str8_substr(str8 s, s64 start, s64 n); /* return str[start, start+n-1] */
 
 /* Operations that need memory */
-str8 str8_create_size(Arena *a, u64 len);
+str8 str8_create_size(Arena *a, s64 len);
 str8 str8_copy(Arena *a, str8 s);
 str8 str8_copy_custom(void* memory, str8 s);
-str8 str8_copy_first_n(Arena *a, str8 s, u64 n);
-str8 str8_copy_first_n_custom(void* memory, str8 s, u64 n);
-str8 str8_copy_cstring(Arena *a, chr8 *c);
-str8 str8_copy_custom_cstring(void* memory, chr8 *c);
 str8 str8_concat(Arena *a, str8 s1, str8 s2);
 
 /* Comparisons / Predicates */
 #define str8_is_empty(s) ((b32)((s).len == 0))
-#define str8_not_empty(s) ((b32)((s.len) != 0))
+#define str8_not_empty(s) ((b32)((s).len != 0))
 b32 str8_eq(str8 a, str8 b);
 b32 str8_has_prefix(str8 s, str8 prefix);
 b32 str8_has_suffix(str8 s, str8 suffix);
@@ -49,10 +91,10 @@ b32 chr8_is_whitespace(chr8 c);
 b32 str8_contains_char(str8 s, chr8 c);
 b32 str8_contains_substring(str8 s, str8 sub);
 b32 str8_contains_delimiter(str8 s, str8 delims);
-#define LCF_STRING_NO_MATCH 0x8000000000000000
-u64 str8_char_location(str8 s, chr8 c);
-u64 str8_substring_location(str8 s, str8 sub);
-u64 str8_delimiter_location(str8 s, str8 delims); 
+#define LCF_STRING_NO_MATCH s64_MIN
+s64 str8_char_location(str8 s, chr8 c);
+s64 str8_substring_location(str8 s, str8 sub);
+s64 str8_delimiter_location(str8 s, str8 delims); 
 
 /* Conditional Operations */
 str8 str8_trim_prefix(str8 s, str8 prefix);
@@ -74,7 +116,7 @@ struct Str8Render { /* TODO(lcf) shit name */
     */
 };
 typedef struct Str8Render Str8Render;
-str8 str8_u64(Str8Render* options, u64 u);
+str8 str8_s64(Str8Render* options, s64 u);
 str8 str8_f64(Str8Render* options, f64 u);
 /* etc */
 
@@ -146,22 +188,36 @@ global str8 str8_NEWLINE = str8_lit("\n");
 #define str8_iter_pop_whitespace(s) str8_iter_pop_whitespace_custom(s, sub)
 
 /** Str8 Lists                       **/
+#ifdef __cplusplus
+struct Str8ListJoin;
+#endif
+
 struct Str8Node {
     struct Str8Node *next;
     struct str8 str;
+#ifdef __cplusplus
+    Str8Node(str8 s);
+#endif
 };
 struct Str8List {
     struct Str8Node *first;
     struct Str8Node *last;
-    u64 count;
-    u64 total_len;
+    s64 count;
+    s64 total_len;
 
-    #if defined(__cplusplus)
-    void AddNode(Str8Node *n);
-    void Append(Str8List nodes);
-    void Add(Arena* arena, str8 str);
-    str8 Join(Arena arena, str8 prefix, str8 seperator, str8 suffix);
-    #endif
+#ifdef __cplusplus
+    void add_node(Str8Node *n);
+    void add(Arena* arena, str8 str);
+    void prepend(Str8List nodes);
+    void append(Str8List nodes);
+    Str8Node* pop_node();
+    Str8List pop(s64 n);
+    void insert(Str8Node *prev, Str8List nodes);
+    Str8Node* skip_node();
+    Str8List skip(s64 n);
+    str8 join(Arena *arena, Str8ListJoin join);
+    Str8List copy(Arena *arena);
+#endif
 };
 typedef struct Str8Node Str8Node;
 typedef struct Str8List Str8List;
@@ -181,7 +237,11 @@ Str8List Str8List_skip(Str8List *list, u32 n);
 struct Str8ListSearch {
     str8 str;
     Str8Node *node;
-    u64 index;
+    s64 index;
+
+    #ifdef __cplusplus
+
+    #endif
 };
 typedef struct Str8ListSearch Str8ListSearch;
 Str8ListSearch Str8List_find_next(Str8Node *head, str8 str);
@@ -198,10 +258,11 @@ struct Str8ListJoin {
 };
 typedef struct Str8ListJoin Str8ListJoin;
 str8 Str8List_join(Arena *arena, Str8List list, Str8ListJoin join);
-Str8List Str8List_copy_nodes(Arena *arena, Str8List list);
+Str8List Str8List_copy(Arena *arena, Str8List list);
 
 /** Unicode                          **/
 /* TODO(lcf) */
+
 
 /** ******************************** **/
 #endif

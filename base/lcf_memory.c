@@ -161,7 +161,7 @@ void ArenaSession_end(ArenaSession s) {
 
 
 #ifdef __cplusplus
-Arena* Arena::create_default(void) {
+Arena* Arena::create(void) {
     return Arena_create_default();
 }
 Arena* Arena::create(u64 size) {

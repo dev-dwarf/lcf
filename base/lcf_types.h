@@ -16,6 +16,13 @@
 #define false 0
 #endif
 
+#ifdef __cplusplus
+#define pragma message("ZERO_STRUCT {}")
+#define ZERO_STRUCT {}
+#else
+#define ZERO_STRUCT {0}
+#endif
+
 #if OS_WINDOWS
 #pragma section(".roglob", read)
 #define read_only __declspec(allocate(".roglob"))

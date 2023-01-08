@@ -35,7 +35,7 @@ LCF_MEMORY_FREE_MEMORY(win32_Free) {
 }
 
 str8 win32_load_entire_file(Arena *arena, str8 filepath) {
-    str8 fileString = {0};
+    str8 fileString = ZERO_STRUCT;
 
     DWORD desired_access = GENERIC_READ;
     DWORD share_mode = 0;
@@ -91,7 +91,7 @@ internal void win32_read_block(HANDLE file, void* block, u64 block_size) {
 }
 
 b32 win32_write_file(str8 filepath, Str8List text) {
-    u64 bytesWrittenTotal = 0;
+    s64 bytesWrittenTotal = 0;
     
     HANDLE file = CreateFileA(filepath.str, FILE_APPEND_DATA | GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
     
@@ -99,7 +99,7 @@ b32 win32_write_file(str8 filepath, Str8List text) {
         u32 toWrite = 0;
         u32 written = 0;
         Str8Node* n = text.first;
-        for (u64 i = 0; i < text.count; i++, n = n->next) {
+        for (s64 i = 0; i < text.count; i++, n = n->next) {
             toWrite = (u32) n->str.len;
             written = 0;
 

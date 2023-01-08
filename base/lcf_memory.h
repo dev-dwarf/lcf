@@ -110,7 +110,7 @@ struct Arena {
 private:
     Arena() {};
 public:
-    static Arena* create_default(void); 
+    static Arena* create(void); 
     static Arena* create(u64 size);
     void destroy(); 
     void* take(u64 size);
@@ -123,9 +123,9 @@ public:
     template<typename T> void* take_array_zero(u64 count);
     void reset(u64 pos);
     void reset();
+    void reset_decommit(u64 pos, u64 commit_size);
     void reset_decommit(u64 pos);
     void reset_decommit();
-
     #endif
 };
 typedef struct Arena Arena;
