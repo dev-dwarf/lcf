@@ -59,7 +59,7 @@ u64 os_GetThreadID(void);
     
 #if OS_WINDOWS
  #include "lcf_win32.h"
-#elseif OS_LINUX || OS_MAC
+#elif OS_LINUX || OS_MAC
  #include "lcf_posix.h"
  #include "lcf_crt.h"
 #else

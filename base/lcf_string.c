@@ -377,7 +377,7 @@ void Str8List_prepend(Str8List *list, Str8List nodes) {
         if (list->count == 0) {
             *list = nodes;
         } else {
-            ASSERTM(nodes.last->next == 0, "nodes.last should be the end of the Str8List.")
+            ASSERTM(nodes.last->next == 0, "nodes.last should be the end of the Str8List.");
             nodes.last->next = list->first;
             list->first = nodes.first;
             list->count += nodes.count;
@@ -392,7 +392,7 @@ void Str8List_append(Str8List *list, Str8List nodes) {
         if (list->count == 0) {
             *list = nodes;
         } else {
-            ASSERTM(nodes.last->next == 0, "nodes.last should be the end of the Str8List.")
+            ASSERTM(nodes.last->next == 0, "nodes.last should be the end of the Str8List.");
             list->last->next = nodes.first;
             list->last = nodes.last;
             list->count += nodes.count;
@@ -406,7 +406,7 @@ void Str8List_insert(Str8List *list, Str8Node *prev, Str8List nodes) {
         if (list->count == 0) {
             *list = nodes;
         } else if (prev != 0) {
-            ASSERTM(nodes.last->next == 0, "nodes.last should be the end of the Str8List.")
+            ASSERTM(nodes.last->next == 0, "nodes.last should be the end of the Str8List.");
             nodes.last->next = prev->next;
             prev->next = nodes.first;
             list->count += nodes.count;
