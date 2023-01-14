@@ -16,6 +16,6 @@
 
 /* Helpers */
 internal void win32_ReadBlock(HANDLE file, void* block, u64 block_size);
-internal void win32_WriteBlock(HANDLE file, Str8List data);
+internal s64 win32_WriteBlock(HANDLE file, Str8List data);
 #endif
 

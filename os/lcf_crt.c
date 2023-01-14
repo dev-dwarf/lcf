@@ -58,17 +58,17 @@ os_FileInfo os_GetFileInfo(str8 filepath) {
         result.written = filestat.st_mtime;
         result.accessed = filestat.st_atime;
 
-        result.os_flags |= st_mode;
+        result.os_flags = filestat.st_mode;
         if (S_ISREG(filestat.st_mode)) {
             result.flags |= OS_IS_FILE;
         }
         
         if (S_ISDIR(filestat.st_mode)) {
-            result.flags |= OS_IS_FILE;
+            result.flags |= OS_IS_DIR;
         }
         
         if (S_ISCHR(filestat.st_mode)) {
-            result.flags |= OS_IS_FILE;
+            result.flags |= OS_IS_DEVICE;
         }
         
         if (filestat.st_mode & SEC_USERR) {

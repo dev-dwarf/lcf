@@ -70,7 +70,7 @@ str8 os_LoadEntireFile(Arena *arena, str8 filepath) {
                to other c APIs, making it convenient to not have to add the null later.
              */
             chr8 *data = Arena_take_array(arena, chr8, size+1);
-            win32_read_block(file, data, size);
+            win32_ReadBlock(file, data, size);
             data[size] = '\0';
             fileString.str = data;
             fileString.len = size;
@@ -93,36 +93,51 @@ b32 os_WriteFile(str8 filepath, Str8List text) {
     return bytesWrittenTotal == text.total_len;
 }
 
-b32 win32_file_was_written(str8 filepath, u64* last_write_time) {
-    u64 new_write_time = win32_get_file_write_time(filepath);
-    if (new_write_time != *last_write_time) {
-        *last_write_time = new_write_time;
-        return true;
-    }
-    return false;
-}
+os_FileInfo os_GetFileInfo(str8 filepath) {
+    os_FileInfo result = ZERO_STRUCT;
 
-u64 win32_get_file_write_time(str8 filepath) {
-    /* FILETIME struct is 64 bits.
+    /* FILETIME struct is unsigned 64 bits.
        REF: https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-filetime
     */
     ASSERTSTATIC(sizeof(FILETIME) == 8, filetimeStruct);
-    
-    union {
-        u64 u;
-        FILETIME ft; 
-    } write_time;
-    write_time.u = 0;
-
     WIN32_FIND_DATA findData;
     HANDLE findHandle = FindFirstFileA(filepath.str, &findData);
     if (findHandle != INVALID_HANDLE_VALUE) {
-        write_time.ft = findData.ftLastWriteTime;
+        result.bytes = ((u64)(findData.nFileSizeHigh) << 32) + findData.nFileSizeLow;
+        result.written = (u64) findData.ftLastWriteTime;
+        result.accessed = (u64) findData.ftLastAccessTime;
+
+        result.os_flags = findData.dwFileAttributes;
+        if ((result.flags & FILE_ATTRIBUTE_NORMAL) &&
+            (result.os_flags & FILE_ATTRIBUTE_DIRECTORY == 0)) {
+            result.flags |= OS_IS_FILE;
+        } else {
+            result.flags |= OS_IS_DIR;
+        }
+
+        if (result.os_flags & FILE_ATTRIBUTE_DEVICE) {
+            result.flags |= OS_IS_DEVICE;
+        }
+
+        if (result.os_flags & FILE_ATTRIBUTE_READONLY) {
+            result.flags |= OS_CAN_READ;
+        } else {
+            result.flags |= OS_CAN_READ | OS_CAN_WRITE;
+        }
+
+        if (str8_has_suffix(filepath.str, str8_lit(".exe"))) {
+            u32 unused;
+            if (GetBinaryTypeA(filepath.str, &unused)) {
+                result.flags |= OS_CAN_EXECUTE;
+            }
+        }
+        
         FindClose(findHandle);
     }
 
-    return write_time.u;
+    return result;
 }
+
 
 u64 os_GetTimeMicroseconds(void) {
     u64 result;
@@ -165,16 +180,16 @@ internal void win32_ReadBlock(HANDLE file, void* block, u64 block_size) {
 internal s64 win32_WriteBlock(HANDLE file, Str8List data) {
     s64 result = 0;
     
-    Str8Node* n = text.first;
-    for (s64 i = 0; i < text.count; i++, n = n->next) {
-        toWrite = (u32) n->str.len;
-        written = 0;
+    Str8Node* n = data.first;
+    for (s64 i = 0; i < data.count; i++, n = n->next) {
+        u32 toWrite = (u32) n->str.len;
+        u32 written = 0;
 
         if (!WriteFile(file, n->str.str, toWrite, (LPDWORD) &written, 0)) {
             break;
         }
             
-        bytesWrittenTotal += written;
+        result += written;
 
         /* NOTE(lcf): Not sure this is really needed in practice. */
         if (n->str.len > u32_MAX) {
