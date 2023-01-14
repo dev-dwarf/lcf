@@ -538,3 +538,5 @@ str8 Str8List::join(Arena *arena, Str8ListJoin join) {return Str8List_join(arena
 Str8List Str8List::copy(Arena *arena) {return Str8List_copy(arena, *this); }
 #endif
 /** ******************************** **/
+
+/* TODO: formatting unsigned, signed, and floats */
