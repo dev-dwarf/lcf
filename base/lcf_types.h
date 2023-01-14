@@ -17,10 +17,15 @@
 #endif
 
 #ifdef __cplusplus
-#define pragma message("ZERO_STRUCT {}")
 #define ZERO_STRUCT {}
 #else
 #define ZERO_STRUCT {0}
+#endif
+
+#if COMPILER_CL
+#define per_thread __declspec(thread)
+#elif COMPILER_CLANG || COMPILER_GCC
+#define per_thread __thread
 #endif
 
 #if OS_WINDOWS
@@ -58,12 +63,12 @@
 #else
     #define ASSERT_KILL() (*(int*)0=0)
     #define ASSERT(C) STATEMENT( if (!(C)) { ASSERT_KILL(); })
-    #define ASSERTM(C, M) ASSERT((M) && (C));
+    #define ASSERTM(C, M) ASSERT((M) && (C))
     #define ASSERTSTATIC(C,label) STATEMENT(                           \
         u8 static_assert_##label[(C)?(1):(-1)];                         \
         (void) static_assert_##label; )
     #define NOTIMPLEMENTED() ASSERTM(0, "Not Implemented")
-    #define BADPATH(M) ASSERTM(0, M);
+    #define BADPATH(M) ASSERTM(0, M)
 #endif
 
 /* Misc */
@@ -146,7 +151,6 @@ typedef u64 b64;
 /* Pointers */
 typedef intptr_t spr;
 typedef uintptr_t upr;
-
 
     
 /** ******************************** **/

@@ -2,8 +2,14 @@
 
 global b32 win32_got_sys_info;
 global SYSTEM_INFO win32_sys_info;
+global s64 win32_PerfFreq;
 
-u64 win32_GetPageSize() {
+void os_Init() {
+    os_GetPageSize();
+    QueryPerformanceFrequency((LARGE_INTEGER*) &win32_PerfFreq);
+}
+
+u64 os_GetPageSize() {
     if (!win32_got_sys_info) {
         GetSystemInfo(&win32_sys_info);
         win32_got_sys_info = true;
@@ -11,14 +17,14 @@ u64 win32_GetPageSize() {
     return (u64) win32_sys_info.dwPageSize;
 }
 
-LCF_MEMORY_RESERVE_MEMORY(win32_Reserve) {
+void* os_Reserve(upr size) {
     u64 snapped = size;
     snapped += LCF_MEMORY_RESERVE_SIZE - 1;
     snapped -= snapped & LCF_MEMORY_RESERVE_SIZE;
     return VirtualAlloc(0, snapped, MEM_RESERVE, PAGE_NOACCESS);
 }
 
-LCF_MEMORY_COMMIT_MEMORY(win32_Commit) {
+b32 os_Commit(void *memory, upr size) {
     u64 snapped = size;
     snapped += LCF_MEMORY_COMMIT_SIZE - 1;
     snapped -= snapped & LCF_MEMORY_COMMIT_SIZE;
@@ -26,15 +32,16 @@ LCF_MEMORY_COMMIT_MEMORY(win32_Commit) {
     return p != 0;
 }
 
-LCF_MEMORY_DECOMMIT_MEMORY(win32_Decommit) {
+void os_Decommit(void *memory, upr size) {
     VirtualFree(memory, size, MEM_DECOMMIT);
 }
 
-LCF_MEMORY_FREE_MEMORY(win32_Free) {
+void os_Free(void *memory, upr size) {
     VirtualFree(memory, 0, MEM_RELEASE);
 }
 
-str8 win32_load_entire_file(Arena *arena, str8 filepath) {
+
+str8 os_LoadEntireFile(Arena *arena, str8 filepath) {
     str8 fileString = ZERO_STRUCT;
 
     DWORD desired_access = GENERIC_READ;
@@ -73,53 +80,13 @@ str8 win32_load_entire_file(Arena *arena, str8 filepath) {
     return fileString;
 }
 
-internal void win32_read_block(HANDLE file, void* block, u64 block_size) {
-    chr8 *ptr = (chr8*) block;
-    chr8 *opl = ptr + block_size;
-    for (;;) {
-        u64 unread = (u64)(opl-ptr);
-        DWORD bytes_to_read = (DWORD)(CLAMPTOP(unread, u32_MAX));
-        DWORD bytes_read = 0;
-        if (!ReadFile(file, ptr, bytes_to_read, &bytes_read, 0)) {
-            break;
-        }
-        ptr += bytes_read;
-        if (ptr >= opl) {
-            break;
-        }
-    }
-}
-
-b32 win32_write_file(str8 filepath, Str8List text) {
+b32 os_WriteFile(str8 filepath, Str8List text) {
     s64 bytesWrittenTotal = 0;
     
     HANDLE file = CreateFileA(filepath.str, FILE_APPEND_DATA | GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
     
     if (file != INVALID_HANDLE_VALUE) {
-        u32 toWrite = 0;
-        u32 written = 0;
-        Str8Node* n = text.first;
-        for (s64 i = 0; i < text.count; i++, n = n->next) {
-            toWrite = (u32) n->str.len;
-            written = 0;
-
-            if (!WriteFile(file, n->str.str, toWrite, (LPDWORD) &written, 0)) {
-                break;
-            }
-            
-            bytesWrittenTotal += written;
-
-            /* NOTE(lcf): Note sure this is really needed in practice. */
-            if (n->str.len > u32_MAX) {
-                toWrite = n->str.len >> 32;
-                written = 0;
-                chr8 *back_half = &(n->str.str[u32_MAX]);
-                while (written != toWrite) {
-                    WriteFile(file, back_half, toWrite, (LPDWORD) &written, 0);
-                }
-                bytesWrittenTotal += written;
-            }
-        }
+        bytesWrittenTotal += win32_WriteBlock(file, text);
         CloseHandle(file);
     }
     
@@ -157,19 +124,69 @@ u64 win32_get_file_write_time(str8 filepath) {
     return write_time.u;
 }
 
-global s64 win32_PerfFreq;
-void win32_init_timing(void) {
-    QueryPerformanceFrequency((LARGE_INTEGER*) &win32_PerfFreq);
-}
-
-f32 win32_get_seconds_elapsed(s64 start, s64 end) {
-    f32 result = (((f32)(end-start))/(f32)win32_PerfFreq);
-    return result;
-}
-
-s64 win32_get_wall_clock(void) {
-    s64 result;
+u64 os_GetTimeMicroseconds(void) {
+    u64 result;
+    
+    s64 counter;
     QueryPerformanceCounter((LARGE_INTEGER*) &result);
+    f64 time_seconds = ((f64) result)/((f64) win32_PerfFreq);
+    result = (u64)(time_seconds * 1000000);
+    
     return result;
 }
 
+u64 os_GetTimeCycles(void) {
+    return __rdtsc();
+}
+
+
+u64 os_GetThreadID(void) {
+    return GetThreadId(0);
+}
+
+
+internal void win32_ReadBlock(HANDLE file, void* block, u64 block_size) {
+    chr8 *ptr = (chr8*) block;
+    chr8 *opl = ptr + block_size;
+    for (;;) {
+        u64 unread = (u64)(opl-ptr);
+        DWORD bytes_to_read = (DWORD)(CLAMPTOP(unread, u32_MAX));
+        DWORD bytes_read = 0;
+        if (!ReadFile(file, ptr, bytes_to_read, &bytes_read, 0)) {
+            break;
+        }
+        ptr += bytes_read;
+        if (ptr >= opl) {
+            break;
+        }
+    }
+}
+
+internal s64 win32_WriteBlock(HANDLE file, Str8List data) {
+    s64 result = 0;
+    
+    Str8Node* n = text.first;
+    for (s64 i = 0; i < text.count; i++, n = n->next) {
+        toWrite = (u32) n->str.len;
+        written = 0;
+
+        if (!WriteFile(file, n->str.str, toWrite, (LPDWORD) &written, 0)) {
+            break;
+        }
+            
+        bytesWrittenTotal += written;
+
+        /* NOTE(lcf): Not sure this is really needed in practice. */
+        if (n->str.len > u32_MAX) {
+            toWrite = n->str.len >> 32;
+            written = 0;
+            chr8 *back_half = &(n->str.str[u32_MAX]);
+            while (written != toWrite) {
+                WriteFile(file, back_half, toWrite, (LPDWORD) &written, 0);
+            }
+            result += written;
+        }
+    }
+
+    return result;
+}

@@ -6,14 +6,14 @@
 
 Prn8 Prn8_create(u32 flags) {
     Prn8 p = {0};
-    p.arena = Arena_create_default();
+    p.arena = Arena_create();
     p.flags = flags;
     return p;
 }
 
 Prn8 Prn8_create_size(u32 flags, u64 size) {
     Prn8 p = {0};
-    p.arena = Arena_create(size);
+    p.arena = Arena_create_custom(size);
     p.flags = flags;
     return p;
 }

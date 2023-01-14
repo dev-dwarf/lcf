@@ -13,8 +13,6 @@ struct str8 {
     #ifdef __cplusplus
     /* Create str8s */
     str8();
-    str8(s64 len, chr8* s);
-    str8(chr8 *s, s64 len);
     str8(chr8 *p1, chr8 *p2);
     str8(chr8 *p);
     str8(const chr8 *p);

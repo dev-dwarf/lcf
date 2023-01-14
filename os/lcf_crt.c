@@ -1,4 +1,6 @@
-str8 stdio_load_entire_file(Arena *arena, str8 filepath) {
+#include "lcf_crt.h"
+
+str8 os_LoadEntireFile(Arena *arena, str8 filepath) {
     str8 file_content = {0};
 
     FILE *file = fopen(filepath.str, "rb");
@@ -17,7 +19,7 @@ str8 stdio_load_entire_file(Arena *arena, str8 filepath) {
     return file_content;
 }
 
-b32 stdio_write_file(str8 filepath, Str8List text) {
+b32 os_WriteFile(str8 filepath, Str8List text) {
     u64 bytes_written = 0;
     FILE *file = fopen(filepath.str, "wb");
     if (file != 0) {
@@ -30,5 +32,85 @@ b32 stdio_write_file(str8 filepath, Str8List text) {
         }
         fclose(file);
     }
-    return bytes_written == text.total_len;
+    return bytes_written == text.total_len;    
+xb}
+b32 os_DeleteFile(str8 path) {
+    s32 result = remove(path.str);
+    return result >= 0;
+}
+
+#define SEC_USERR (1 << 8)
+#define SEC_USERW (1 << 7)
+#define SEC_USERE (1 << 6)
+#define SEC_USERALL (SEC_USERR || SEC_USERW || SEC_USERE)
+#define SEC_OTHERREAD ((1 << 2))
+b32 os_CreateDirectory(str8 path) {
+    s32 result = mkdir(path.str, SEC_USERALL || SEC_OTHERREAD);
+    return result >= 0;
+}
+
+os_FileInfo os_GetFileInfo(str8 filepath) {
+    os_FileInfo result = ZERO_STRUCT;
+
+    struct stat filestat;
+    if (stat(filepath.str, &crt) == 0) {
+        result.bytes = filestat.st_size;
+        result.written = filestat.st_mtime;
+        result.accessed = filestat.st_atime;
+
+        result.os_flags |= st_mode;
+        if (S_ISREG(filestat.st_mode)) {
+            result.flags |= OS_IS_FILE;
+        }
+        
+        if (S_ISDIR(filestat.st_mode)) {
+            result.flags |= OS_IS_FILE;
+        }
+        
+        if (S_ISCHR(filestat.st_mode)) {
+            result.flags |= OS_IS_FILE;
+        }
+        
+        if (filestat.st_mode & SEC_USERR) {
+            result.flags |= OS_CAN_READ;
+        }
+        
+        if (filestat.st_mode & SEC_USERW) {
+            result.flags |= OS_CAN_WRITE;
+        }
+
+        if (filestat.st_mode & SEC_USERE) {
+            result.flags |= OS_CAN_EXECUTE;
+        }
+    }
+    
+    return result;
+}
+
+
+/* Get __rdtsc support */
+#if (COMPILER_GCC || COMPILER_CLANG)
+ #include <x86intrin.h>
+ #define CYCLE_TIMER __rdtsc
+#elseif (COMPILER_CL)
+ #include <intrin.h>
+ #pragma intrinsic(__rdtsc)
+ #define CYCLE_TIMER __rdtsc
+#elseif
+ #define CYCLE_TIMER NOT_IMPLEMENTED()
+#endif
+
+u64 os_GetTimeMicroseconds(void) {
+    u64 result = 0;
+
+    struct timespec time;
+    if (clock_gettime(CLOCK_REALTIME, &time) == 0) {
+        result = time.tv_nsec;
+    }
+        
+    return result;
+}
+
+u64 os_GetTimeCycles(void) {
+    return CYCLE_TIMER();
 }

@@ -1,8 +1,11 @@
 #include "lcf_string.h"
 #include <string.h> /* only for memset, memcpy */
 /** ASCII                            **/
-#define RET_STR8(s,l)             \
-    return {l, s}
+#define RET_STR8(s,l)                           \
+    str8 _s = ZERO_STRUCT;                      \
+    _s.str = s;                                 \
+    _s.len = l;                                 \
+    return _s;
 
 /* Create strs */
 str8 str8_from(chr8* s, s64 len) {
@@ -486,8 +489,6 @@ Str8List Str8List_copy(Arena *arena, Str8List list) {
 #ifdef __cplusplus
 /* Create str8s */
 str8::str8(): str(0), len(0){}
-str8::str8(s64 len, chr8 *s) {*this = str8_from(s, len); }
-str8::str8(chr8 *s, s64 len) {*this = str8_from(s, len); }
 str8::str8(chr8 *p1, chr8 *p2) {*this = str8_from_pointer_range(p1, p2); }
 str8::str8(chr8 *p) {*this = str8_from_cstring(p); }
 str8::str8(const chr8 *p) {*this = str8_lit(p); }

@@ -71,11 +71,13 @@
 #if !defined(LCF_MEMORY_COMMIT_SIZE)
  #define LCF_MEMORY_COMMIT_SIZE KB(4)
 #endif
+#if !defined(LCF_MEMORY_DECOMMIT_THRESHOLD)
+#define LCF_MEMORY_DECOMMIT_THRESHOLD (16*(LCF_MEMORY_COMMIT_SIZE))
+#endif 
 #if !defined(LCF_MEMORY_ALIGNMENT)
  #define LCF_MEMORY_ALIGNMENT (sizeof(void*))
 #endif
 /** ******************************** **/
-
 
 /* Macro to specify whether memory should be cleared
    For example, when enabled Arena_reset will clear
@@ -88,7 +90,7 @@
 #endif
 
 /* NOTE: study ryan fleury arena. In particular, why are arenas a linked list?
-   Try to understand the advantage offered by doing it that way and how it might
+   Need to understand the advantage offered by doing it that way and how it might
    affect usage code */
 
 /** Arena Allocator
@@ -117,22 +119,19 @@ public:
     void* take(u64 size, u32 alignment);
     void* take_zero(u64 size);
     void* take_zero(u64 size, u32 alignment);
-    template<typename T> void* take_struct();
-    template<typename T> void* take_struct_zero();
-    template<typename T> void* take_array(u64 count);
-    template<typename T> void* take_array_zero(u64 count);
+    template<typename T> T* take_struct();
+    template<typename T> T* take_struct_zero();
+    template<typename T> T* take_array(u64 count);
+    template<typename T> T* take_array_zero(u64 count);
     void reset(u64 pos);
     void reset();
-    void reset_decommit(u64 pos, u64 commit_size);
-    void reset_decommit(u64 pos);
-    void reset_decommit();
     #endif
 };
 typedef struct Arena Arena;
 
 /* Create and destroy Arenas */
-Arena* Arena_create_default(void); 
-Arena* Arena_create(u64 size);
+Arena* Arena_create(void); 
+Arena* Arena_create_custom(u64 size);
 void Arena_destroy(Arena *a); 
 
 /* Take memory from the arena */
@@ -148,13 +147,6 @@ void* Arena_take_zero_custom(Arena *a, u64 size, u32 alignment);
 /* Reset arena to a certain position */
 void Arena_reset(Arena *a, u64 pos);
 void Arena_reset_all(Arena *a);
-void Arena_reset_decommit(Arena *a, u64 pos);
-void Arena_reset_all_decommit(Arena *a);
-
-/* Resize blocks without destroying data.
-   (only a performance savings when old_memory was most recently taken block) */
-void* Arena_resize(Arena *a, void* old_memory, u64 old_size, u64 new_size);
-void* Arena_resize_custom(Arena *a, void* old_memory, u64 old_size, u64 new_size, u32 alignment);
 
 /* Arena sessions - wraps resetting memory */
 struct ArenaSession {
