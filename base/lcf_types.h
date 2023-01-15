@@ -151,7 +151,6 @@ typedef u64 b64;
 /* Pointers */
 typedef intptr_t spr;
 typedef uintptr_t upr;
-
     
 /** ******************************** **/
 #endif

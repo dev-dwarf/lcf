@@ -48,6 +48,8 @@ b32 os_DeleteFile(str8 path);
 b32 os_CreateDirectory(str8 path);
 os_FileInfo os_GetFileInfo(str8 filepath);
 
+/* TODO: file iters */
+
 b32 os_FileWasWritten(str8 filepath, u64* last_write_time);
 
 /* Timing */

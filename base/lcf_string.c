@@ -432,7 +432,7 @@ Str8Node* Str8List_skip_node(Str8List *list) {
     return out;
 }
 
-Str8List Str8List_skip(Str8List *list, u32 n) {
+Str8List Str8List_skip(Str8List *list, s64 n) {
     Str8List out = ZERO_STRUCT;
     for (u32 i = 0; (list->count > 0) && (i < n); i++) {
         Str8Node *f = list->first;
@@ -491,7 +491,6 @@ Str8List Str8List_copy(Arena *arena, Str8List list) {
 str8::str8(): str(0), len(0){}
 str8::str8(chr8 *p1, chr8 *p2) {*this = str8_from_pointer_range(p1, p2); }
 str8::str8(chr8 *p) {*this = str8_from_cstring(p); }
-str8::str8(const chr8 *p) {*this = str8_lit(p); }
 str8::str8(Arena *a, s64 l) {*this = str8_create_size(a, l); }
 /* Basic/fast operations */
 str8 str8::first(s64 l) {return str8_first(*this, l); }

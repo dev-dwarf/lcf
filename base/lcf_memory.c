@@ -24,7 +24,7 @@ Arena* Arena_create_custom(u64 size) {
     LCF_MEMORY_commit(a, LCF_MEMORY_COMMIT_SIZE);
     a->size = size;
     a->pos = sizeof(Arena);
-    a->commited_pos = LCF_MEMORY_COMMIT_SIZE;
+    a->commited_pos = 1;
     a->alignment = LCF_MEMORY_ALIGNMENT;
     return a;
 }
@@ -47,13 +47,14 @@ void* Arena_take_custom(Arena *a, u64 size, u32 alignment) {
         
     /* Check that there is space */
     if (new_pos < a->size) {
-        upr commited_pos = a->commited_pos;
+        upr commited_pos = a->commited_pos*LCF_MEMORY_COMMIT_SIZE;
 
         /* Commit memory if needed */
         if (new_pos > commited_pos) {
-            upr new_commited_pos = next_alignment(mem + new_pos, LCF_MEMORY_COMMIT_SIZE)-mem;
+            upr new_commited_pos = next_alignment(new_pos, LCF_MEMORY_COMMIT_SIZE);
             if (LCF_MEMORY_commit(a, new_commited_pos)) {
-                a->commited_pos = commited_pos = new_commited_pos;
+                a->commited_pos = (s32)(new_commited_pos/LCF_MEMORY_COMMIT_SIZE);
+                commited_pos = new_commited_pos;
             }
         }
 
@@ -91,10 +92,10 @@ void Arena_reset(Arena *a, u64 pos) {
         /* Decommit everything except what is needed, or one page */
         upr mem = (upr) a;
         upr needed_pos = (next_alignment(mem + a->pos, LCF_MEMORY_COMMIT_SIZE) - mem) ;
-        upr over_commited = a->commited_pos - needed_pos;
+        upr over_commited = a->commited_pos*LCF_MEMORY_COMMIT_SIZE - needed_pos;
         if (needed_pos > 0 && over_commited >= LCF_MEMORY_DECOMMIT_THRESHOLD) {
             LCF_MEMORY_decommit(a+needed_pos, over_commited);
-            a->commited_pos = needed_pos / LCF_MEMORY_COMMIT_SIZE;
+            a->commited_pos = (s32)(needed_pos / LCF_MEMORY_COMMIT_SIZE);
         }
         
         if (LCF_MEMORY_DEBUG_CLEAR) {

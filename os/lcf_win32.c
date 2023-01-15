@@ -100,19 +100,25 @@ os_FileInfo os_GetFileInfo(str8 filepath) {
        REF: https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-filetime
     */
     ASSERTSTATIC(sizeof(FILETIME) == 8, filetimeStruct);
+    union {
+        u64 u;
+        FILETIME ft;
+    } time;
     WIN32_FIND_DATA findData;
     HANDLE findHandle = FindFirstFileA(filepath.str, &findData);
     if (findHandle != INVALID_HANDLE_VALUE) {
         result.bytes = ((u64)(findData.nFileSizeHigh) << 32) + findData.nFileSizeLow;
-        result.written = (u64) findData.ftLastWriteTime;
-        result.accessed = (u64) findData.ftLastAccessTime;
+        time.ft = findData.ftLastWriteTime;
+        result.written = time.u;
+        time.ft = findData.ftLastAccessTime;
+        result.accessed = time.u;
 
         result.os_flags = findData.dwFileAttributes;
-        if ((result.flags & FILE_ATTRIBUTE_NORMAL) &&
-            (result.os_flags & FILE_ATTRIBUTE_DIRECTORY == 0)) {
+        if ((result.flags & FILE_ATTRIBUTE_NORMAL) ||
+            ((result.os_flags & FILE_ATTRIBUTE_DIRECTORY) == 0)) {
             result.flags |= OS_IS_FILE;
         } else {
-            result.flags |= OS_IS_DIR;
+            result.flags |= OS_IS_FOLDER;
         }
 
         if (result.os_flags & FILE_ATTRIBUTE_DEVICE) {
@@ -125,11 +131,9 @@ os_FileInfo os_GetFileInfo(str8 filepath) {
             result.flags |= OS_CAN_READ | OS_CAN_WRITE;
         }
 
-        if (str8_has_suffix(filepath.str, str8_lit(".exe"))) {
-            u32 unused;
-            if (GetBinaryTypeA(filepath.str, &unused)) {
-                result.flags |= OS_CAN_EXECUTE;
-            }
+        u32 unused;
+        if (GetBinaryTypeA(filepath.str, (DWORD*) &unused)) {
+            result.flags |= OS_CAN_EXECUTE;
         }
         
         FindClose(findHandle);
@@ -143,8 +147,8 @@ u64 os_GetTimeMicroseconds(void) {
     u64 result;
     
     s64 counter;
-    QueryPerformanceCounter((LARGE_INTEGER*) &result);
-    f64 time_seconds = ((f64) result)/((f64) win32_PerfFreq);
+    QueryPerformanceCounter((LARGE_INTEGER*) &counter);
+    f64 time_seconds = ((f64) counter)/((f64) win32_PerfFreq);
     result = (u64)(time_seconds * 1000000);
     
     return result;

@@ -15,7 +15,6 @@ struct str8 {
     str8();
     str8(chr8 *p1, chr8 *p2);
     str8(chr8 *p);
-    str8(const chr8 *p);
     str8(Arena *a, s64 l);
     operator chr8*() const { return str; }
     operator s64() const { return len; }
@@ -229,7 +228,7 @@ Str8Node* Str8List_pop_node(Str8List *list);
 Str8List Str8List_pop(Str8List *list, u32 n);
 void Str8List_insert(Str8List *list, Str8Node *prev, Str8List nodes);
 Str8Node* Str8List_skip_node(Str8List *list);
-Str8List Str8List_skip(Str8List *list, u32 n);
+Str8List Str8List_skip(Str8List *list, s64 n);
 
 /* Split, Search, Replace */
 struct Str8ListSearch {
