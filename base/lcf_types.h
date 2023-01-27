@@ -57,9 +57,9 @@
 #undef ASSERT
 #if LCF_DISABLE_ASSERT
     #define ASSERT(C)
-    #define ASSERT_STATIC(C,label)
-    #define NotImplemented 
-    #define InvalidPath 
+    #define ASSERTSTATIC(C,label)
+    #define NOTIMPLEMENTED()
+    #define BADPATH(M)
 #else
     #define ASSERT_KILL() (*(int*)0=0)
     #define ASSERT(C) STATEMENT( if (!(C)) { ASSERT_KILL(); })
@@ -93,39 +93,39 @@
 
 /* Signed Int */
 typedef int8_t s8;
-read_only global s8 s8_MAX = 0x7F;
-read_only global s8 s8_MIN = -1 - 0x7F;
+read_only global const s8 s8_MAX = 0x7F;
+read_only global const s8 s8_MIN = -1 - 0x7F;
 typedef int16_t s16;
-read_only global s16 s16_MAX = 0x7FFF;
-read_only global s16 s16_MIN = -1 - 0x7FFF;
+read_only global const s16 s16_MAX = 0x7FFF;
+read_only global const s16 s16_MIN = -1 - 0x7FFF;
 typedef int32_t s32;
-read_only global s32 s32_MAX = 0x7FFFFFFF;
-read_only global s32 s32_MIN = -1 - 0x7FFFFFFF;
+read_only global const s32 s32_MAX = 0x7FFFFFFF;
+read_only global const s32 s32_MIN = -1 - 0x7FFFFFFF;
 typedef int64_t s64;
-read_only global s64 s64_MAX = 0x7FFFFFFFFFFFFFFF;
-read_only global s64 s64_MIN = -1 - 0x7FFFFFFFFFFFFFFF;
+read_only global const s64 s64_MAX = 0x7FFFFFFFFFFFFFFF;
+read_only global const s64 s64_MIN = -1 - 0x7FFFFFFFFFFFFFFF;
 
 /* Unsigned Int */
 typedef uint8_t u8;
-read_only global u8 u8_MAX = 0xFF;
-read_only global u8 u8_MIN = 0;
+read_only global const u8 u8_MAX = 0xFF;
+read_only global const u8 u8_MIN = 0;
 typedef uint16_t u16;
-read_only global u16 u16_MAX = 0xFFFF;
-read_only global u16 u16_MIN = 0;
+read_only global const u16 u16_MAX = 0xFFFF;
+read_only global const u16 u16_MIN = 0;
 typedef uint32_t u32;
-read_only global u32 u32_MAX = 0xFFFFFFFF;
-read_only global u32 u32_MIN = 0;
+read_only global const u32 u32_MAX = 0xFFFFFFFF;
+read_only global const u32 u32_MIN = 0;
 typedef uint64_t u64;
-read_only global u64 u64_MAX = 0xFFFFFFFFFFFFFFFF;
-read_only global u64 u64_MIN = 0;
+read_only global const u64 u64_MAX = 0xFFFFFFFFFFFFFFFF;
+read_only global const u64 u64_MIN = 0;
 
 /* Floating Point */
 typedef float f32; 
-read_only global f32 f32_MIN = (f32)-3.4028234664e+38;
-read_only global f32 f32_MAX = (f32) 3.4028234664e+38;
-read_only global f32 f32_EPSILON = (f32) 5.96046448e-8;
-read_only global f32 f32_TAU = (f32) 6.28318530718;
-read_only global f32 f32_PI = (f32) 3.14159265359f;
+read_only global const f32 f32_MIN = (f32)-3.4028234664e+38;
+read_only global const f32 f32_MAX = (f32) 3.4028234664e+38;
+read_only global const f32 f32_EPSILON = (f32) 5.96046448e-8;
+read_only global const f32 f32_TAU = (f32) 6.28318530718;
+read_only global const f32 f32_PI = (f32) 3.14159265359f;
 
 read_only global u32 SignF32 = 0x80000000;
 read_only global u32 ExponentF32 = 0x7F800000;
