@@ -25,7 +25,7 @@ b32 os_WriteFile(str8 filepath, Str8List text) {
     if (file != 0) {
         Str8Node* n = text.first;
         for (s64 i = 0; i < text.count; i++, n = n->next) {
-            if ((n->str.len > 0) && (!fwrite(n->str.str, n->str.len, 1, file))) {
+            if ((n->str.len > 0) && (fwrite(n->str.str, n->str.len, 1, file) <= 0)) {
                 break;
             }
             bytes_written += n->str.len;
