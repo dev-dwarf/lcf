@@ -1,14 +1,14 @@
 #include "lcf_crt.h"
 
-str8 os_LoadEntireFile(Arena *arena, str8 filepath) {
-    str8 file_content = {0};
+str os_LoadEntireFile(arena *arena, str filepath) {
+    str file_content = {0};
 
     FILE *file = fopen(filepath.str, "rb");
     if (file != 0) {
         fseek(file, 0, SEEK_END);
         u64 file_len = ftell(file);
         fseek(file, 0, SEEK_SET);
-        file_content.str = (chr8*) Arena_take(arena, file_len+1);
+        file_content.str = (chr8*) arena_take(arena, file_len+1);
         if (file_content.str != 0) {
             file_content.len = file_len;
             fread(file_content.str, 1, file_len, file);
@@ -19,11 +19,11 @@ str8 os_LoadEntireFile(Arena *arena, str8 filepath) {
     return file_content;
 }
 
-b32 os_WriteFile(str8 filepath, Str8List text) {
+b32 os_WriteFile(str filepath, StrList text) {
     u64 bytes_written = 0;
     FILE *file = fopen(filepath.str, "wb");
     if (file != 0) {
-        Str8Node* n = text.first;
+        StrNode* n = text.first;
         for (s64 i = 0; i < text.count; i++, n = n->next) {
             if ((n->str.len > 0) && (fwrite(n->str.str, n->str.len, 1, file) <= 0)) {
                 break;
@@ -34,7 +34,7 @@ b32 os_WriteFile(str8 filepath, Str8List text) {
     }
     return bytes_written == text.total_len;    
 xb}
-b32 os_DeleteFile(str8 path) {
+b32 os_DeleteFile(str path) {
     s32 result = remove(path.str);
     return result >= 0;
 }
@@ -44,12 +44,12 @@ b32 os_DeleteFile(str8 path) {
 #define SEC_USERE (1 << 6)
 #define SEC_USERALL (SEC_USERR || SEC_USERW || SEC_USERE)
 #define SEC_OTHERREAD ((1 << 2))
-b32 os_CreateDirectory(str8 path) {
+b32 os_CreateDirectory(str path) {
     s32 result = mkdir(path.str, SEC_USERALL || SEC_OTHERREAD);
     return result >= 0;
 }
 
-os_FileInfo os_GetFileInfo(str8 filepath) {
+os_FileInfo os_GetFileInfo(str filepath) {
     os_FileInfo result = ZERO_STRUCT;
 
     struct stat filestat;

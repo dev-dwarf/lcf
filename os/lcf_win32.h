@@ -1,5 +1,3 @@
-/* TODO: redo OS ryan style, have os header for common things and then define each one seperately. */
-
 #ifndef LCF_WIN32
 #define LCF_WIN32 "1.0.0"
 
@@ -16,6 +14,6 @@
 
 /* Helpers */
 internal void win32_ReadBlock(HANDLE file, void* block, u64 block_size);
-internal s64 win32_WriteBlock(HANDLE file, Str8List data);
+internal s64 win32_WriteBlock(HANDLE file, StrList data);
 #endif
 

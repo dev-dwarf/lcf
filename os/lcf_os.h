@@ -42,15 +42,15 @@ struct os_FileInfo {
     u64 accessed;
 };
 typedef struct os_file_info os_file_info;
-str8 os_LoadEntireFile(Arena *arena, str8 filepath);
-b32 os_WriteFile(str8 filepath, Str8List text);
-b32 os_DeleteFile(str8 path);
-b32 os_CreateDirectory(str8 path);
-os_FileInfo os_GetFileInfo(str8 filepath);
+str os_LoadEntireFile(Arena *arena, str filepath);
+b32 os_WriteFile(str filepath, StrList text);
+b32 os_DeleteFile(str path);
+b32 os_CreateDirectory(str path);
+os_FileInfo os_GetFileInfo(str filepath);
 
 /* TODO: file iters */
 
-b32 os_FileWasWritten(str8 filepath, u64* last_write_time);
+b32 os_FileWasWritten(str filepath, u64* last_write_time);
 
 /* Timing */
 u64 os_GetTimeMicroseconds(void);
@@ -69,3 +69,4 @@ u64 os_GetThreadID(void);
 #endif
 
 #endif /* LCF_OS */
+

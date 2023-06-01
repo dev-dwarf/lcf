@@ -41,8 +41,8 @@ void os_Free(void *memory, upr size) {
 }
 
 
-str8 os_LoadEntireFile(Arena *arena, str8 filepath) {
-    str8 fileString = ZERO_STRUCT;
+str os_LoadEntireFile(Arena *arena, str filepath) {
+    str fileString = ZERO_STRUCT;
 
     DWORD desired_access = GENERIC_READ;
     DWORD share_mode = 0;
@@ -69,7 +69,7 @@ str8 os_LoadEntireFile(Arena *arena, str8 filepath) {
                Made this default because often the loaded string will need to be passed
                to other c APIs, making it convenient to not have to add the null later.
              */
-            chr8 *data = Arena_take_array(arena, chr8, size+1);
+            ch8 *data = Arena_take_array(arena, ch8, size+1);
             win32_ReadBlock(file, data, size);
             data[size] = '\0';
             fileString.str = data;
@@ -80,7 +80,7 @@ str8 os_LoadEntireFile(Arena *arena, str8 filepath) {
     return fileString;
 }
 
-b32 os_WriteFile(str8 filepath, Str8List text) {
+b32 os_WriteFile(str filepath, StrList text) {
     s64 bytesWrittenTotal = 0;
     
     HANDLE file = CreateFileA(filepath.str, FILE_APPEND_DATA | GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
@@ -93,7 +93,7 @@ b32 os_WriteFile(str8 filepath, Str8List text) {
     return bytesWrittenTotal == text.total_len;
 }
 
-os_FileInfo os_GetFileInfo(str8 filepath) {
+os_FileInfo os_GetFileInfo(str filepath) {
     os_FileInfo result = ZERO_STRUCT;
 
     /* FILETIME struct is unsigned 64 bits.
@@ -165,8 +165,8 @@ u64 os_GetThreadID(void) {
 
 
 internal void win32_ReadBlock(HANDLE file, void* block, u64 block_size) {
-    chr8 *ptr = (chr8*) block;
-    chr8 *opl = ptr + block_size;
+    ch8 *ptr = (ch8*) block;
+    ch8 *opl = ptr + block_size;
     for (;;) {
         u64 unread = (u64)(opl-ptr);
         DWORD bytes_to_read = (DWORD)(CLAMPTOP(unread, u32_MAX));
@@ -181,10 +181,10 @@ internal void win32_ReadBlock(HANDLE file, void* block, u64 block_size) {
     }
 }
 
-internal s64 win32_WriteBlock(HANDLE file, Str8List data) {
+internal s64 win32_WriteBlock(HANDLE file, StrList data) {
     s64 result = 0;
     
-    Str8Node* n = data.first;
+    StrNode* n = data.first;
     for (s64 i = 0; i < data.count; i++, n = n->next) {
         u32 toWrite = (u32) n->str.len;
         u32 written = 0;
@@ -199,7 +199,7 @@ internal s64 win32_WriteBlock(HANDLE file, Str8List data) {
         if (n->str.len > u32_MAX) {
             toWrite = n->str.len >> 32;
             written = 0;
-            chr8 *back_half = &(n->str.str[u32_MAX]);
+            ch8 *back_half = &(n->str.str[u32_MAX]);
             while (written != toWrite) {
                 WriteFile(file, back_half, toWrite, (LPDWORD) &written, 0);
             }

@@ -85,7 +85,7 @@ void* Arena_take_zero(Arena *a, u64 size) {
 }
 
 void Arena_reset(Arena *a, u64 pos) {
-    ASSERTM(pos < a->pos, "No need to reset arena!");
+    ASSERTM(pos < a->pos, "No need to reset Arena!");
     if (pos < a->pos) {
         pos = MAX(pos, sizeof(Arena));
 
@@ -112,56 +112,13 @@ void Arena_reset_all(Arena *a) {
 
 ArenaSession ArenaSession_begin(Arena *a) {
     ArenaSession s;
-    s.arena = a;
-    s.session_start = a->pos;
+    s.Arena = a;
+    s.save_point = a->pos;
     return s;
 }
 
 void ArenaSession_end(ArenaSession s) {
-    Arena_reset(s.arena, s.session_start);
+    Arena_reset(s.Arena, s.save_point);
 }
-
-
-#ifdef __cplusplus
-Arena* Arena::create(void) {
-    return Arena_create();
-}
-Arena* Arena::create(u64 size) {
-    return Arena_create_custom(size);
-}
-void Arena::destroy() {
-    Arena_destroy(this);
-}
-void* Arena::take(u64 sz) {
-    return Arena_take(this, sz);
-}
-void* Arena::take(u64 sz, u32 align) {
-    return Arena_take_custom(this, sz, align);
-}
-void* Arena::take_zero(u64 sz) {
-    return Arena_take_zero(this, sz);
-}
-void* Arena::take_zero(u64 sz, u32 align) {
-    return Arena_take_zero_custom(this, sz, align);
-}
-template<typename T> T* Arena::take_struct() {
-    return reinterpret_cast<T*>(Arena_take(this, sizeof(T)));
-}
-template<typename T> T* Arena::take_struct_zero() {
-    return reinterpret_cast<T*>(Arena_take_zero(this, sizeof(T)));
-}
-template<typename T> T* Arena::take_array(u64 count) {
-    return reinterpret_cast<T*>(Arena_take(this, sizeof(T)*count));
-}
-template<typename T> T* Arena::take_array_zero(u64 count) {
-    return reinterpret_cast<T*>(Arena_take_zero(this, sizeof(T)*count));
-}
-void Arena::reset(u64 ps) {
-    Arena_reset(this, ps);
-}
-void Arena::reset() {
-    Arena_reset_all(this);
-}
-#endif
 /** **************************************/
 #undef B_PTR

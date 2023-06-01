@@ -9,7 +9,7 @@
 #endif
 
 /* Generic OS Utils: */
-b32 os_FileWasWritten(str8 filepath, u64* last_write_time) {
+b32 os_FileWasWritten(str filepath, u64* last_write_time) {
     b32 result = 0;
     
     os_FileInfo file = os_GetFileInfo(filepath);

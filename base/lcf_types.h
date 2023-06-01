@@ -9,12 +9,6 @@
 #define and &&
 #define or ||
 #define not !
-#ifndef true
-#define true 1
-#endif
-#ifndef false
-#define false 0
-#endif
 
 #ifdef __cplusplus
 #define ZERO_STRUCT {}
@@ -127,18 +121,17 @@ read_only global const f32 f32_EPSILON = (f32) 5.96046448e-8;
 read_only global const f32 f32_TAU = (f32) 6.28318530718;
 read_only global const f32 f32_PI = (f32) 3.14159265359f;
 
-read_only global u32 SignF32 = 0x80000000;
-read_only global u32 ExponentF32 = 0x7F800000;
-read_only global u32 MantissaF32 = 0x7FFFFF;
+read_only global const u32 f32_SIGN     = 0x80000000;
+read_only global const u32 f32_EXPONENT = 0x7F800000;
+read_only global const u32 f32_MANTISSA = 0x007FFFFF;
 
-f32 f32_pos_inf(void);
-f32 f32_neg_inf(void);
+read_only global const f32 f32_POS_INF = 0x7F800000;
+read_only global const f32 f32_NEG_INF = 0xFF800000;
+
 f32 f32_abs(f32 f);
 f32 f32_sign(f32 f); /* NOTE(lcf): sign of an IEEE754 float is never 0. */
 
-typedef double f64; global f64 f64_epsilon = 2.220446e-16;
-f64 f64_pos_inf(void);
-f64 f64_neg_inf(void);
+typedef double f64; 
 f64 f64_abs(f64 f);
 f64 f64_sign(f64 f);
 

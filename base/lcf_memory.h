@@ -89,7 +89,7 @@
 #define LCF_MEMORY_ARENA_CLEAR 0xCF
 #endif
 
-/* NOTE: study ryan fleury arena. In particular, why are arenas a linked list?
+/* NOTE: study ryan fleury Arena. In particular, why are Arenas a linked list?
    Need to understand the advantage offered by doing it that way and how it might
    affect usage code */
 
@@ -98,8 +98,8 @@
     are used to automatically reserve, commit/decommit, and free virtual memory.
     There is some granularity for the user w.r.t aligning/commiting/decommiting memory.
 
-    There are also procs to "reset" the arena to a certain position, allowing the memory
-    to be used again by the arena. These are wrapped by the ARENA_SESSION macro and
+    There are also procs to "reset" the Arena to a certain position, allowing the memory
+    to be used again by the Arena. These are wrapped by the ARENA_SESSION macro and
     ArenaSession_(begin|end) procs to cover the most common scenario.
                                      **/
 struct Arena {
@@ -107,25 +107,6 @@ struct Arena {
     u64 size;
     s32 alignment;
     s32 commited_pos; /* In pages (LCF_MEMORY_COMMIT_SIZE) */
-
-#ifdef __cplusplus
-private:
-    Arena() {};
-public:
-    static Arena* create(void); 
-    static Arena* create(u64 size);
-    void destroy(); 
-    void* take(u64 size);
-    void* take(u64 size, u32 alignment);
-    void* take_zero(u64 size);
-    void* take_zero(u64 size, u32 alignment);
-    template<typename T> T* take_struct();
-    template<typename T> T* take_struct_zero();
-    template<typename T> T* take_array(u64 count);
-    template<typename T> T* take_array_zero(u64 count);
-    void reset(u64 pos);
-    void reset();
-    #endif
 };
 typedef struct Arena Arena;
 
@@ -134,7 +115,7 @@ Arena* Arena_create(void);
 Arena* Arena_create_custom(u64 size);
 void Arena_destroy(Arena *a); 
 
-/* Take memory from the arena */
+/* Take memory from the Arena */
 void* Arena_take(Arena *a, u64 size);
 void* Arena_take_custom(Arena *a, u64 size, u32 alignment);
 void* Arena_take_zero(Arena *a, u64 size);
@@ -144,21 +125,21 @@ void* Arena_take_zero_custom(Arena *a, u64 size, u32 alignment);
 #define Arena_take_struct(a, type) ((type*) Arena_take(a, sizeof(type)))
 #define Arena_take_struct_zero(a, type) ((type*) Arena_take_zero(a, sizeof(type)))
 
-/* Reset arena to a certain position */
+/* Reset Arena to a certain position */
 void Arena_reset(Arena *a, u64 pos);
 void Arena_reset_all(Arena *a);
 
 /* Arena sessions - wraps resetting memory */
 struct ArenaSession {
-    Arena *arena;
-    u64 session_start;
+    Arena *Arena;
+    u64 save_point;
 };
 typedef struct ArenaSession ArenaSession;
 
 ArenaSession ArenaSession_begin(Arena *a);
 void ArenaSession_end(ArenaSession s);
-#define ARENA_SESSION(arena) DEFER_LOOP( \
-        ArenaSession MACRO_VAR(session) = ArenaSession_begin(arena),    \
+#define ARENA_SESSION(Arena) DEFER_LOOP( \
+        ArenaSession MACRO_VAR(session) = ArenaSession_begin(Arena),    \
         ArenaSession_end(MACRO_VAR(session)) \
         )
 
@@ -198,6 +179,7 @@ void ArenaSession_end(ArenaSession s);
 #define PopQ(f,l,o) PopQCustom(f,l,o,Nextsym,CheckNull,Nullify,Zerosym)
 
 /* TODO: doubly linked list macros (haven't needed them yet) */
+/* TODO: concat two lists */
 
 #undef Zero
 #undef CheckNull
