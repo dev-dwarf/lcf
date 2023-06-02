@@ -340,6 +340,18 @@ void StrList_add(Arena *a, StrList *list, str str) {
     StrList_add_node(list, StrNode_from(a, str));
 }
 
+void StrList_add_noden(StrList *list, u32 n, StrNode *node[]) {
+    while (n-- > 0) {
+        StrList_add_node(list, *(node++));
+    }
+}
+
+void StrList_addn(Arena *a, StrList *list, u32 n, str str[]) {
+    while (n-- > 0) {
+        StrList_add(a, list, *(str++));
+    }
+}
+
 StrNode* StrList_pop_node(StrList *list) {
     StrNode *out = 0;
     if (list->count == 1) {
