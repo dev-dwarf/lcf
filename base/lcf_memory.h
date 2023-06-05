@@ -148,42 +148,39 @@ void ArenaSession_end(ArenaSession s);
 /** Singly and Doubly Linked Lists   **/
 /* Implements internal Stack and Queue operations on linked lists. Implemented as macros
    to be useful with arbitrary data structures in C and C++ */
-#define Nextsym next
-#define Zerosym 0 
-#define CheckNull(p) ((p) == Zero)
-#define Nullify(p) ((p) = Zero)
+#define lcfNextsym next
+#define lcfZerosym 0 
+#define lcfCheckNull(p) ((p) == lcfZerosym)
+#define lcfNullify(p) ((p) = lcfZerosym)
 
 /* Scheming : ] */
-#define PushFCustom(first,node,nextsym)             \
+#define PushSCustom(first,node,nextsym)             \
     ((node)->nextsym = (first), (first) = (node))
-#define PopFCustom(first,out,nextsym,checkfun)              \
+#define PopSCustom(first,out,nextsym,checkfun)              \
     (checkfun(first)? zerosym :                             \
      ((out) = (first), (first) = (first)->nextsym),  (out))
 #define PushQCustom(first,last,node,nextsym,checkfun,nullfun)   \
-    ((checkfun(last)? ((first) = (last) = (node))               \
-      : ((last)->nextsym = (node), (last) = (node))),           \
-     nullfun((node)->nextsym))
+    ((checkfun(last)? ((last) = (first) = (node))                 \
+      : ((last) = (last)->nextsym = (node))),            \
+      nullfun((node)->nextsym))
 #define PushQFrontCustom(first,last,node,nextsym,checkfun,nullfun)      \
     (checkfun(first)? ((first) = (last) = (node), nullfun((node)->nextsym)) \
      : ((node)->nextsym = (first), (first) = (node)))
 #define PopQCustom(first,last,out,nextsym,nullfun)                      \
-    (((out) = (first),                                                  \
-        ((first) == (last))? ((nullfun(first),nullfun(last))            \
-                              : ((first) = (first)->nextsym))),         \
+    (((out) = (last),                                                  \
+        ((first) == (last))? (nullfun(first),nullfun(last))            \
+                              : ((first) = (first)->nextsym)),         \
      (out))
 
-#define PushF(f,n) PushFCustom(f,n,Nextsym)
-#define PopF(f) PopFCustom(f,Nextsym,CheckNull,Zerosym)
-#define PushQ(f,l,n) PopFCustom(f,l,n,Nextsym,CheckNull,Nullify)
-#define PushQFront(f,l,n) PushQFrontCustom(f,l,n,Nextsym,CheckNull,Nullify)
-#define PopQ(f,l,o) PopQCustom(f,l,o,Nextsym,CheckNull,Nullify,Zerosym)
+#define PushS(l,n) PushSCustom((l)->first,n,lcfNextsym)
+#define PopS(l) PopSCustom((l)->first,lcfNextsym,lcfCheckNull,lcfZerosym)
+#define PushQ(l,n) PushQCustom((l)->first,(l)->last,n,lcfNextsym,lcfCheckNull,lcfNullify)
+#define PushQFront(l,n) PushQFrontCustom((l)->first,(l)->last,n,lcfNextsym,lcfCheckNull,lcfNullify)
+#define PopQ(l,o) PopQCustom((l)->first,(l)->last,o,lcfNextsym,lcfNullify)
 
 /* TODO: doubly linked list macros (haven't needed them yet) */
 /* TODO: concat two lists */
 
-#undef Zero
-#undef CheckNull
-#undef Nullify
 
 /** ******************************** **/
 #endif

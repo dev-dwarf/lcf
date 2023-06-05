@@ -314,41 +314,31 @@ StrNode* StrNode_from(Arena *a, str str) {
     return n;
 }
 
-void StrList_add_node(StrList *list, StrNode *n) {
-    if (list->count == 0) {
-        list->first = n;
-    } else {
-        list->last->next = n;
-    }
-    list->last = n;
+void StrList_push_node(StrList *list, StrNode *n) {
+    PushQ(list, n);
     list->count++;
     list->total_len += n->str.len;
 }
 
 void StrList_prepend_node(StrList *list, StrNode *n) {
-    if (list->count == 0) {
-        list->last = n;
-    } else {
-        n->next = list->first;
-    }
-    list->first = n;
+    PushQFront(list, n);
     list->count++;
     list->total_len += n->str.len;
 }
 
-void StrList_add(Arena *a, StrList *list, str str) {
-    StrList_add_node(list, StrNode_from(a, str));
+void StrList_push(Arena *a, StrList *list, str str) {
+    StrList_push_node(list, StrNode_from(a, str));
 }
 
-void StrList_add_noden(StrList *list, u32 n, StrNode *node[]) {
+void StrList_push_noden(StrList *list, u32 n, StrNode *node[]) {
     while (n-- > 0) {
-        StrList_add_node(list, *(node++));
+        StrList_push_node(list, *(node++));
     }
 }
 
-void StrList_addn(Arena *a, StrList *list, u32 n, str str[]) {
+void StrList_pushn(Arena *a, StrList *list, u32 n, str str[]) {
     while (n-- > 0) {
-        StrList_add(a, list, *(str++));
+        StrList_push(a, list, *(str++));
     }
 }
 
@@ -375,8 +365,8 @@ StrList StrList_pop(StrList *list, s64 n) {
     StrList out = ZERO_STRUCT;
     for (s64 i = 0; i < n; i++) {
         StrNode *pop = StrList_pop_node(list);
-        StrList_add_node(&out, pop);
-        if (pop == 0) {
+        StrList_push_node(&out, pop);
+         if (pop == 0) {
             break;
         }
     }
@@ -451,7 +441,7 @@ StrList StrList_skip(StrList *list, s64 n) {
         list->count--;
         list->total_len -= f->str.len;
         list->first = list->first->next;
-        StrList_add_node(&out, f);
+        StrList_push_node(&out, f);
     }
     return out;
 }
@@ -493,9 +483,13 @@ StrList StrList_copy(Arena *a, StrList list) {
     for (s64 i = 0; i < list.count; i++, n = n->next) {
         StrNode *copyn = Arena_take_struct_zero(a, StrNode);
         copyn->str = n->str;
-        StrList_add_node(&copy, copyn);
+        StrList_push_node(&copy, copyn);
     }
     return copy;
+}
+
+StrList StrList_reverse(Arena *a, StrList list) {
+    return {0};
 }
 
 /** ******************************** **/

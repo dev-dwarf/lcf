@@ -157,17 +157,17 @@ typedef struct StrNode StrNode;
 typedef struct StrList StrList;
 
 /* List manipulation */
-void StrList_add_node(StrList *list, StrNode *n);
-void StrList_add_noden(StrList *list, u32 n, StrNode *node[]);
-void StrList_add(Arena *a, StrList *list, str str);
-void StrList_addn(Arena *a, StrList *list, u32 n, str str[]);
-#define StrList_addv(a, list, s, ...) do { \
+void StrList_push_node(StrList *list, StrNode *n);
+void StrList_push_noden(StrList *list, u32 n, StrNode *node[]);
+void StrList_push(Arena *a, StrList *list, str str);
+void StrList_pushn(Arena *a, StrList *list, u32 n, str str[]);
+#define StrList_pushv(a, list, s, ...) do { \
         str _strarray[] = {s, __VA_ARGS__};                        \
-        StrList_addn(a, list, ARRAY_LENGTH(_strarray), _strarray); \
+        StrList_pushn(a, list, ARRAY_LENGTH(_strarray), _strarray); \
     } while(0);
-#define StrList_add_nodev(list,  n, ...) do {    \
+#define StrList_push_nodev(list,  n, ...) do {    \
         StrNode _narray[] =  {n, __VA_ARGS__};                          \
-        StrList_add_noden(list, sizeof(_narray)/sizeof(StrNode), _narray); \
+        StrList_push_noden(list, sizeof(_narray)/sizeof(StrNode), _narray); \
     } while(0);
 
 
