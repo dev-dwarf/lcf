@@ -33,7 +33,8 @@ enum os_file_flags {
     OS_CAN_EXECUTE = FLAG(5),
 };
 struct os_FileInfo {
-    /* */
+    /* General */
+    str path;
     u32 os_flags;
     u32 flags;
     u64 bytes;
@@ -41,16 +42,33 @@ struct os_FileInfo {
     u64 written;
     u64 accessed;
 };
-typedef struct os_file_info os_file_info;
+typedef struct os_FileInfo os_FileInfo;
 str os_LoadEntireFile(Arena *arena, str filepath);
 b32 os_WriteFile(str filepath, StrList text);
 b32 os_DeleteFile(str path);
 b32 os_CreateDirectory(str path);
 os_FileInfo os_GetFileInfo(str filepath);
-
-/* TODO: file iters */
-
 b32 os_FileWasWritten(str filepath, u64* last_write_time);
+
+/* TODO: file searching/iters */
+/* for windows reference site.cpp */
+/* for linux reference glob.h
+   REF: https://chat.openai.com/share/312f3f74-4c0a-4be7-b4e0-ae846657f221 */
+struct os_FileSearch {
+    u8 data[1024];
+};
+typedef struct os_FileSearch os_FileSearch;
+b32 os_BeginFileSearch(Arena *arena, os_FileSearch* search, str searchstr);
+b32 os_NextFileSearch(Arena *arena, os_FileSearch *search, os_FileInfo *out_file);
+void os_EndFileSearch(os_FileSearch *search);
+#define os_FileSearchIterCustom(arena, searchstr, filesym)              \
+    os_FileSearch os_fs##__LINE__;                                      \
+    DEFER_IF(os_BeginFileSearch(arena, &os_fs##__LINE__, searchstr),  \
+               os_EndFileSearch(os_fs##__LINE__))                       \
+        for (os_FileInfo filesym; os_NextFileSearch(arena, &os_fs##__LINE__, &filesym); )    
+    
+/* File Path Utils */
+str os_PathRemoveLastSlash(str path);
 
 /* Timing */
 u64 os_GetTimeMicroseconds(void);
@@ -58,6 +76,7 @@ u64 os_GetTimeCycles(void);
 
 /* Threading */
 u64 os_GetThreadID(void);
+
     
 #if OS_WINDOWS
  #include "lcf_win32.h"

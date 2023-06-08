@@ -54,6 +54,7 @@ os_FileInfo os_GetFileInfo(str filepath) {
 
     struct stat filestat;
     if (stat(filepath.str, &crt) == 0) {
+        result.path = filepath;
         result.bytes = filestat.st_size;
         result.written = filestat.st_mtime;
         result.accessed = filestat.st_atime;

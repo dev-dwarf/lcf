@@ -107,6 +107,7 @@ os_FileInfo os_GetFileInfo(str filepath) {
     WIN32_FIND_DATA findData;
     HANDLE findHandle = FindFirstFileA(filepath.str, &findData);
     if (findHandle != INVALID_HANDLE_VALUE) {
+        result.path = filepath;
         result.bytes = ((u64)(findData.nFileSizeHigh) << 32) + findData.nFileSizeLow;
         time.ft = findData.ftLastWriteTime;
         result.written = time.u;
@@ -209,3 +210,4 @@ internal s64 win32_WriteBlock(HANDLE file, StrList data) {
 
     return result;
 }
+

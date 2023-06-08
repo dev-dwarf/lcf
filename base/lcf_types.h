@@ -77,8 +77,8 @@
 #define MACRO_CONCAT(S1,S2) _MACRO_CONCAT(S1,S2)
 #define MACRO_VAR(var) MACRO_CONCAT(var, __LINE__)
 #define SWAP(T,a,b) do{ T t__ = a; a = b; b = t__; }while(0)
-#define DEFER_LOOP(start,end) start; for(int ___i = (0); ___i == 0; ___i += 1, end)
-    
+#define DEFER_LOOP(start,end) start; for(int ___i = 1; ___i; ___i = 0, end)
+#define DEFER_IF(condition, end) for(int ___i = 1; (condition) && ___i; ___i = 0, end)
 /** ******************************** **/
 
 

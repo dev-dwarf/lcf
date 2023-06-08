@@ -8,7 +8,7 @@
 #include "lcf_crt.c"
 #endif
 
-/* Generic OS Utils: */
+/* Generic OS Utils */
 b32 os_FileWasWritten(str filepath, u64* last_write_time) {
     b32 result = 0;
     
@@ -22,3 +22,4 @@ b32 os_FileWasWritten(str filepath, u64* last_write_time) {
 
     return result;
 }
+
