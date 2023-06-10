@@ -12,7 +12,7 @@
 b32 os_FileWasWritten(str filepath, u64* last_write_time) {
     b32 result = 0;
     
-    os_FileInfo file = os_GetFileInfo(filepath);
+    os_FileInfo file = os_GetFileInfo(0, filepath);
     if (file.os_flags > 0) {
         if (*last_write_time != file.written) {
             *last_write_time = file.written;

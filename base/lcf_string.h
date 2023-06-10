@@ -35,6 +35,7 @@ str str_create_size(Arena *a, s64 len);
 str str_copy(Arena *a, str s);
 str str_copy_custom(void* memory, str s);
 str str_concat(Arena *a, str s1, str s2);
+ch8* str_to_cstring(Arena *a, str s);
 
 /* Comparisons / Predicates */
 #define str_is_empty(s) ((b32)((s).len == 0))
@@ -48,6 +49,7 @@ b32 str_contains_substring(str s, str sub);
 b32 str_contains_delimiter(str s, str delims);
 #define LCF_STRING_NO_MATCH s64_MIN
 s64 str_char_location(str s, ch8 c);
+s64 str_char_location_backward(str s, ch8 find);
 s64 str_substring_location(str s, str sub);
 s64 str_delimiter_location(str s, str delims); 
 
@@ -57,6 +59,11 @@ str str_trim_suffix(str s, str suffix);
 str str_trim_whitespace(str s);
 str str_trim_whitespace_front(str s);
 str str_trim_whitespace_back(str s);
+
+/* Paths */
+str str_trim_last_slash(str s);
+str str_trim_file_type(str s);
+str str_get_file_type(str s);
 
 /* Rendering */
 /* TODO(lcf): printing primitive types to str */
@@ -201,6 +208,7 @@ struct StrJoin {
 typedef struct StrJoin StrJoin;
 str StrList_join(Arena *a, StrList list, StrJoin join);
 StrList StrList_copy(Arena *a, StrList list);
+StrList StrList_reverse(StrList list);
 
 /** Unicode                          **/
 /* TODO(lcf) */

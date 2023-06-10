@@ -49,12 +49,18 @@ b32 os_CreateDirectory(str path) {
     return result >= 0;
 }
 
-os_FileInfo os_GetFileInfo(str filepath) {
+os_FileInfo os_GetFileInfo(Arena *arena, str filepath) {
     os_FileInfo result = ZERO_STRUCT;
-
+    filepath = str_trim_last_slash(filepath); 
     struct stat filestat;
     if (stat(filepath.str, &crt) == 0) {
-        result.path = filepath;
+        if (arena != 0) {
+            result.path = str_copy(arena, filepath);
+            u64 loc = str_char_location_backward(filepath, '/');
+            if (loc != LCF_STRING_NO_MATCH) {
+                result.name = str_skip(filepath, loc+1);
+            }
+        }
         result.bytes = filestat.st_size;
         result.written = filestat.st_mtime;
         result.accessed = filestat.st_atime;

@@ -115,6 +115,13 @@ str str_concat(Arena *a, str s1, str s2) {
     return concat;
 }
 
+ch8* str_to_cstring(Arena *a, str s) {
+    ch8 *nt = (ch8*) Arena_take(a, s.len+1);
+    memcpy(nt, s.str, s.len);
+    nt[s.len] = '\0';
+    return nt;
+}
+
 /* Comparisons / Predicates */
 b32 str_eq(str a, str b) {
     return (a.len == b.len) &&
@@ -151,6 +158,14 @@ b32 str_contains_char(str s, ch8 find) {
 }
 s64 str_char_location(str s, ch8 find) {
     str_iter(s) {
+        if (c == find) {
+            return i;
+        }
+    }
+    return LCF_STRING_NO_MATCH;
+}
+s64 str_char_location_backward(str s, ch8 find) {
+    str_iter_backward(s) {
         if (c == find) {
             return i;
         }
@@ -256,6 +271,29 @@ str str_trim_whitespace_back(str s) {
     
     return s;
 }
+
+/* Paths */
+str str_trim_last_slash(str s) {
+    if (s.str[s.len-1] == '\\' || s.str[s.len-1] == '/') {
+        s.len -= 1;
+    }
+    return s;
+}
+str str_trim_file_type(str s) {
+    s64 loc = str_char_location_backward(s, '.');
+    if (loc == LCF_STRING_NO_MATCH) {
+        s = str_first(s, loc);
+    }
+    return s;
+}
+str str_get_file_type(str s) {
+    s64 loc = str_char_location_backward(s, '.');
+    if (loc == LCF_STRING_NO_MATCH) {
+        s = str_skip(s, loc+1);
+    }
+    return s;
+}
+
 
 str str_pop_at_first_substring(str *src, str split_by) {
     str s = *src;
@@ -489,6 +527,20 @@ StrList StrList_copy(Arena *a, StrList list) {
 }
 
 StrList StrList_reverse(Arena *a, StrList list) {
+    /* TODO allocate new nodes instead of interfering with old list 
+    StrNode *cur = list->first, *prev = 0, *temp;
+    while(cur != list->last) {
+        temp = cur->next;
+        cur->next = prev;
+        prev = cur;
+        cur = temp;
+    }
+
+    temp = list->first;
+    list->first = list->last;
+    list->last = temp;
+    */
+    
     return {0};
 }
 

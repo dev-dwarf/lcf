@@ -93,9 +93,8 @@ b32 os_WriteFile(str filepath, StrList text) {
     return bytesWrittenTotal == text.total_len;
 }
 
-os_FileInfo os_GetFileInfo(str filepath) {
+os_FileInfo win32_GetFileInfo(Arena *arena, HANDLE filehandle, WIN32_FIND_DATA fd) {
     os_FileInfo result = ZERO_STRUCT;
-
     /* FILETIME struct is unsigned 64 bits.
        REF: https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-filetime
     */
@@ -104,17 +103,24 @@ os_FileInfo os_GetFileInfo(str filepath) {
         u64 u;
         FILETIME ft;
     } time;
-    WIN32_FIND_DATA findData;
-    HANDLE findHandle = FindFirstFileA(filepath.str, &findData);
-    if (findHandle != INVALID_HANDLE_VALUE) {
-        result.path = filepath;
-        result.bytes = ((u64)(findData.nFileSizeHigh) << 32) + findData.nFileSizeLow;
-        time.ft = findData.ftLastWriteTime;
+    
+    if (filehandle != INVALID_HANDLE_VALUE) {
+        if (arena != 0) {
+            result.name = str_copy(arena, str_from_cstring(fd.cFileName));
+            /* TODO: getting the path this way does not work. How on earth
+               are you supposed to get the path of a file in Win32!! */
+            result.path = str_create_size(arena, MAX_PATH+1);
+            result.path.len = GetFinalPathNameByHandleA(filehandle, result.path.str, MAX_PATH, 0);
+        }
+        result.bytes = ((u64)(fd.nFileSizeHigh) << 32) + fd.nFileSizeLow;
+        time.ft = fd.ftLastWriteTime;
         result.written = time.u;
-        time.ft = findData.ftLastAccessTime;
+        time.ft = fd.ftLastAccessTime;
         result.accessed = time.u;
+        time.ft = fd.ftCreationTime;
+        result.created = time.u;
 
-        result.os_flags = findData.dwFileAttributes;
+        result.os_flags = fd.dwFileAttributes;
         if ((result.flags & FILE_ATTRIBUTE_NORMAL) ||
             ((result.os_flags & FILE_ATTRIBUTE_DIRECTORY) == 0)) {
             result.flags |= OS_IS_FILE;
@@ -133,13 +139,20 @@ os_FileInfo os_GetFileInfo(str filepath) {
         }
 
         u32 unused;
-        if (GetBinaryTypeA(filepath.str, (DWORD*) &unused)) {
+        if (arena != 0 && GetBinaryTypeA(result.path.str, (DWORD*) &unused)) {
             result.flags |= OS_CAN_EXECUTE;
         }
         
-        FindClose(findHandle);
     }
+    return result;
+}
 
+os_FileInfo os_GetFileInfo(Arena *arena, str filepath) {
+    os_FileInfo result;
+    WIN32_FIND_DATA fd;
+    HANDLE handle = FindFirstFileA(filepath.str, &fd);
+    result = win32_GetFileInfo(arena, handle, fd);
+    FindClose(handle);
     return result;
 }
 
@@ -210,4 +223,35 @@ internal s64 win32_WriteBlock(HANDLE file, StrList data) {
 
     return result;
 }
+
+os_FileSearch* os_BeginFileSearch(Arena *arena, str searchstr) {
+    win32_FileSearch *fs = 0; 
+    searchstr = str_trim_whitespace(searchstr);
+    searchstr = str_trim_last_slash(searchstr);
+    if (searchstr.len > 0) {
+        fs = (win32_FileSearch*) Arena_take_struct_zero(arena, os_FileSearch);
+        fs->handle = FindFirstFileA(str_to_cstring(arena, searchstr), &(fs->fd));
+    }
+    return (os_FileSearch*) fs;
+}
+
+b32 os_NextFileSearch(Arena *arena, os_FileSearch *os_fs, os_FileInfo *out_file) {
+    win32_FileSearch *fs = (win32_FileSearch*) os_fs;
+    b32 has_file = 0;
+    if (fs->handle != INVALID_HANDLE_VALUE) {
+        has_file = true;
+        *out_file = win32_GetFileInfo(arena, fs->handle, fs->fd);
+        if (!FindNextFile(fs->handle, &fs->fd)) {
+            fs->handle = INVALID_HANDLE_VALUE;
+        }
+    }
+    return has_file;
+}
+
+void os_EndFileSearch(os_FileSearch *os_fs) {
+    win32_FileSearch *fs = (win32_FileSearch*) os_fs;
+    FindClose(fs->handle);
+}
+
+
 

@@ -15,5 +15,11 @@
 /* Helpers */
 internal void win32_ReadBlock(HANDLE file, void* block, u64 block_size);
 internal s64 win32_WriteBlock(HANDLE file, StrList data);
+
+/* File Iters */
+struct win32_FileSearch {
+    WIN32_FIND_DATA fd;
+    HANDLE handle;
+};
 #endif
 
