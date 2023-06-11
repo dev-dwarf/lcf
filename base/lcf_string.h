@@ -19,7 +19,11 @@ str str_from(ch8* s, s64 len);
 str str_from_pointer_range(ch8 *p1, ch8 *p2);
 str str_from_cstring(ch8 *cstr);
 
-#define strl(s) str_from((ch8*)(s),(s64)sizeof(s)-1) /* -1 to exclude null character */
+#ifdef __cplusplus
+#define strl(s) str_from((ch8*)s, (s64)sizeof(s)-1)
+#else
+#define strl(s) ({(s64)sizeof(s)-1, (ch8*)(s)}) /* -1 to exclude null character */
+#endif
 global str str_EMPTY = strl("");
 
 /* Basic/fast operations */
@@ -181,7 +185,7 @@ void StrList_pushn(Arena *a, StrList *list, u32 n, str str[]);
 void StrList_prepend(StrList *list, StrList nodes);
 void StrList_append(StrList *list, StrList nodes);
 StrNode* StrList_pop_node(StrList *list);
-StrList StrList_pop(StrList *list, u32 n);
+StrList StrList_pop(StrList *list, s64 n);
 void StrList_insert(StrList *list, StrNode *prev, StrList nodes);
 StrNode* StrList_skip_node(StrList *list);
 StrList StrList_skip(StrList *list, s64 n);
@@ -208,7 +212,7 @@ struct StrJoin {
 typedef struct StrJoin StrJoin;
 str StrList_join(Arena *a, StrList list, StrJoin join);
 StrList StrList_copy(Arena *a, StrList list);
-StrList StrList_reverse(StrList list);
+StrList StrList_reverse(Arena *a, StrList list);
 
 /** Unicode                          **/
 /* TODO(lcf) */

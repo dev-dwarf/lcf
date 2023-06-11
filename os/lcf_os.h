@@ -60,7 +60,7 @@ struct os_FileSearch {
     u8 data[512];
 };
 typedef struct os_FileSearch os_FileSearch;
-b32 os_BeginFileSearch(Arena *arena, os_FileSearch* search, str searchstr);
+os_FileSearch* os_BeginFileSearch(Arena *arena, str searchstr);
 b32 os_NextFileSearch(Arena *arena, os_FileSearch *search, os_FileInfo *out_file);
 void os_EndFileSearch(os_FileSearch *search);
 #define os_FileSearchIterCustom(arena, searchstr, filesym)              \

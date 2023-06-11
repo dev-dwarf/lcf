@@ -384,7 +384,9 @@ StrNode* StrList_pop_node(StrList *list) {
     StrNode *out = 0;
     if (list->count == 1) {
         out = list->first;
-        *list = ZERO_STRUCT;
+        /* NOTE(lcf): Compiler bug? */
+        StrList zero = ZERO_STRUCT;
+        (*list) = zero;
     } else if (list->count != 0) {
         StrNode *new_last = list->first->next;
         while (new_last->next != list->last) {
@@ -527,6 +529,7 @@ StrList StrList_copy(Arena *a, StrList list) {
 }
 
 StrList StrList_reverse(Arena *a, StrList list) {
+    StrList out = ZERO_STRUCT;
     /* TODO allocate new nodes instead of interfering with old list 
     StrNode *cur = list->first, *prev = 0, *temp;
     while(cur != list->last) {
@@ -541,7 +544,7 @@ StrList StrList_reverse(Arena *a, StrList list) {
     list->last = temp;
     */
     
-    return {0};
+    return out;
 }
 
 /** ******************************** **/
