@@ -1,6 +1,6 @@
 #include "lcf_crt.h"
 
-str os_LoadEntireFile(arena *arena, str filepath) {
+str os_ReadFile(arena *arena, str filepath) {
     str file_content = {0};
 
     FILE *file = fopen(filepath.str, "rb");

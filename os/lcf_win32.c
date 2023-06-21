@@ -41,7 +41,7 @@ void os_Free(void *memory, upr size) {
 }
 
 
-str os_LoadEntireFile(Arena *arena, str filepath) {
+str os_ReadFile(Arena *arena, str filepath) {
     str fileString = ZERO_STRUCT;
 
     DWORD desired_access = GENERIC_READ;

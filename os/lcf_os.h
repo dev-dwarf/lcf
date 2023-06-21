@@ -45,7 +45,7 @@ struct os_FileInfo {
     u64 created;
 };
 typedef struct os_FileInfo os_FileInfo;
-str os_LoadEntireFile(Arena *arena, str filepath);
+str os_ReadFile(Arena *arena, str filepath);
 b32 os_WriteFile(str filepath, StrList text);
 b32 os_DeleteFile(str path);
 b32 os_CreateDirectory(str path);

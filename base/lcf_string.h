@@ -19,12 +19,9 @@ str str_from(ch8* s, s64 len);
 str str_from_pointer_range(ch8 *p1, ch8 *p2);
 str str_from_cstring(ch8 *cstr);
 
-#ifdef __cplusplus
 #define strl(s) str_from((ch8*)s, (s64)sizeof(s)-1)
-#else
-#define strl(s) ({(s64)sizeof(s)-1, (ch8*)(s)}) /* -1 to exclude null character */
-#endif
-global str str_EMPTY = strl("");
+#define strc(s) ((str){(sizeof(s)-1), (ch8*)s})
+global str str_EMPTY = {0, 0};
 
 /* Basic/fast operations */
 str str_first(str s, s64 len); /* return first len chars of str, str[0, len) */
@@ -139,7 +136,7 @@ str str_pop_at_first_whitespace(str *src);
         iter = str_pop_at_first_delimiter(&MACRO_VAR(_str),MACRO_VAR(_delims)) \
         )
 #define str_iter_pop_delimiter(s, delims) str_iter_pop_delimiter_custom(s, delims, sub)
-global str str_NEWLINE = strl("\n");
+global str str_NEWLINE = {1, "\n"};
 #define str_iter_pop_line(s) str_iter_pop_delimiter_custom(s, str_NEWLINE, line)
 
 #define str_iter_pop_whitespace_custom(s, iter)                    \
