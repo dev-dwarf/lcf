@@ -88,7 +88,7 @@ str str_copy_first_n_custom(void* memory, str s, s64 n) {
     s = str_first(s, n);
     return str_copy_custom((ch8*) memory, s);
 }
-
+ 
 str str_copy_cstring(Arena *a, ch8 *c) {
     str cstr = str_from_cstring(c);
     return str_copy(a, cstr);
@@ -115,11 +115,13 @@ str str_concat(Arena *a, str s1, str s2) {
     return concat;
 }
 
-ch8* str_to_cstring(Arena *a, str s) {
-    ch8 *nt = (ch8*) Arena_take(a, s.len+1);
-    memcpy(nt, s.str, s.len);
-    nt[s.len] = '\0';
-    return nt;
+str str_make_cstring(Arena *a, str s) {
+    str cp;
+    cp.len = s.len;
+    cp.str = (ch8*) Arena_take(a, cp.len+1);
+    memcpy(cp.str, s.str, s.len);
+    cp.str[s.len] = '\0';
+    return cp;
 }
 
 /* Comparisons / Predicates */

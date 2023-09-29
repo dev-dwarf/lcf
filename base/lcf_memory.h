@@ -113,15 +113,16 @@ typedef struct Arena Arena;
 /* Create and destroy Arenas */
 Arena* Arena_create(void); 
 Arena* Arena_create_custom(u64 size);
-void Arena_destroy(Arena *a); 
+void Arena_destroy(Arena *a);
+void Arena_set_alignment(Arena *a, s32 alignment);
 
 /* Take memory from the Arena */
 void* Arena_take(Arena *a, u64 size);
-void* Arena_take_custom(Arena *a, u64 size, u32 alignment);
-void* Arena_take_zero(Arena *a, u64 size);
-void* Arena_take_zero_custom(Arena *a, u64 size, u32 alignment);
-#define Arena_take_array(a, type, count) ((type*) Arena_take(a, sizeof(type)*count))
-#define Arena_take_array_zero(a, type, count) ((type*) Arena_take_zero(a, sizeof(type)*count))
+inline void* Arena_take_custom(Arena *a, u64 size, u32 alignment);
+inline void* Arena_take_zero(Arena *a, u64 size);
+inline void* Arena_take_zero_custom(Arena *a, u64 size, u32 alignment);
+#define Arena_take_array(a, type, count) ((type*) Arena_take(a, sizeof(type)*(count)))
+#define Arena_take_array_zero(a, type, count) ((type*) Arena_take_zero(a, sizeof(type)*(count)))
 #define Arena_take_struct(a, type) ((type*) Arena_take(a, sizeof(type)))
 #define Arena_take_struct_zero(a, type) ((type*) Arena_take_zero(a, sizeof(type)))
 
@@ -131,7 +132,7 @@ void Arena_reset_all(Arena *a);
 
 /* Arena sessions - wraps resetting memory */
 struct ArenaSession {
-    Arena *Arena;
+    Arena *arena;
     u64 save_point;
 };
 typedef struct ArenaSession ArenaSession;
@@ -142,6 +143,16 @@ void ArenaSession_end(ArenaSession s);
         ArenaSession MACRO_VAR(session) = ArenaSession_begin(Arena),    \
         ArenaSession_end(MACRO_VAR(session)) \
         )
+
+/* Scratch Memory */
+void Arena_thread_init_scratch();
+Arena* Arena_scratch_custom(Arena** conflicts, s32 n);
+ArenaSession Scratch_session_custom(Arena** conflicts, s32 n);
+#define Arena_scratch() Arena_scratch_custom(0, 0)
+#define Scratch_session() Scratch_session_custom(0, 0)
+#define SCRATCH_SESSION(session) DEFER_LOOP( \
+    ArenaSession session = Scratch_session(), \
+    ArenaSession_end(session))
 
 /** ******************************** **/
 

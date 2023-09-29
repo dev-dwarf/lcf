@@ -14,7 +14,11 @@
 #include "../base/lcf_base.h"
 
 /* Call before any other of these functions */
-void os_Init();
+void os_PlatformInit();
+void os_Init() {
+    os_PlatformInit();
+    Arena_thread_init_scratch();
+}
 
 /* Virtual Memory */
 u64 os_GetPageSize();

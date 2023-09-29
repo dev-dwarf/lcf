@@ -4,7 +4,7 @@ global b32 win32_got_sys_info;
 global SYSTEM_INFO win32_sys_info;
 global s64 win32_PerfFreq;
 
-void os_Init() {
+void os_PlatformInit() {
     os_GetPageSize();
     QueryPerformanceFrequency((LARGE_INTEGER*) &win32_PerfFreq);
 }
@@ -82,8 +82,12 @@ str os_ReadFile(Arena *arena, str filepath) {
 
 b32 os_WriteFile(str filepath, StrList text) {
     s64 bytesWrittenTotal = 0;
-    
-    HANDLE file = CreateFileA(filepath.str, FILE_APPEND_DATA | GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+
+    HANDLE file;
+    SCRATCH_SESSION(scratch) {
+        str safe_path = str_make_cstring(scratch.arena, filepath);
+        file = CreateFileA(safe_path.str, FILE_APPEND_DATA | GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+    }
     
     if (file != INVALID_HANDLE_VALUE) {
         bytesWrittenTotal += win32_WriteBlock(file, text);
@@ -230,7 +234,7 @@ os_FileSearch* os_BeginFileSearch(Arena *arena, str searchstr) {
     searchstr = str_trim_last_slash(searchstr);
     if (searchstr.len > 0) {
         fs = (win32_FileSearch*) Arena_take_struct_zero(arena, os_FileSearch);
-        fs->handle = FindFirstFileA(str_to_cstring(arena, searchstr), &(fs->fd));
+        fs->handle = FindFirstFileA(str_make_cstring(arena, searchstr).str, &(fs->fd));
     }
     return (os_FileSearch*) fs;
 }

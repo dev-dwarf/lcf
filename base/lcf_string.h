@@ -20,7 +20,7 @@ str str_from_pointer_range(ch8 *p1, ch8 *p2);
 str str_from_cstring(ch8 *cstr);
 
 #define strl(s) str_from((ch8*)s, (s64)sizeof(s)-1)
-#define strc(s) ((str){(sizeof(s)-1), (ch8*)s})
+#define strc(s) {sizeof(s)-1, (ch8*)s}
 global str str_EMPTY = {0, 0};
 
 /* Basic/fast operations */
@@ -36,7 +36,7 @@ str str_create_size(Arena *a, s64 len);
 str str_copy(Arena *a, str s);
 str str_copy_custom(void* memory, str s);
 str str_concat(Arena *a, str s1, str s2);
-ch8* str_to_cstring(Arena *a, str s);
+str str_make_cstring(Arena *a, str s);
 
 /* Comparisons / Predicates */
 #define str_is_empty(s) ((b32)((s).len == 0))
@@ -50,7 +50,7 @@ b32 str_contains_substring(str s, str sub);
 b32 str_contains_delimiter(str s, str delims);
 #define LCF_STRING_NO_MATCH s64_MIN
 s64 str_char_location(str s, ch8 c);
-s64 str_char_location_backward(str s, ch8 find);
+s64 str_char_location_backward(str s, ch8 find); 
 s64 str_substring_location(str s, str sub);
 s64 str_delimiter_location(str s, str delims); 
 

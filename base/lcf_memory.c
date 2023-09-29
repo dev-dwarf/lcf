@@ -37,6 +37,10 @@ void Arena_destroy(Arena *a) {
     LCF_MEMORY_free(a, a->size);
 }
 
+void Arena_set_alignment(Arena *a, s32 alignment) {
+    a->alignment = alignment;
+}
+
 void* Arena_take_custom(Arena *a, u64 size, u32 alignment) {
     void* result = 0;
     
@@ -68,24 +72,24 @@ void* Arena_take_custom(Arena *a, u64 size, u32 alignment) {
     return result;
 }
 
-void* Arena_take(Arena *a, u64 size) {
-    return Arena_take_custom(a, size, LCF_MEMORY_ALIGNMENT);
+inline void* Arena_take(Arena *a, u64 size) {
+    return Arena_take_custom(a, size, a->alignment);
 }
 
-void* Arena_take_zero_custom(Arena *a, u64 size, u32 alignment) {
+inline void* Arena_take_zero_custom(Arena *a, u64 size, u32 alignment) {
     void* mem = Arena_take_custom(a, size, alignment);
     MemoryZero(mem, size);
     return mem;
 }
 
-void* Arena_take_zero(Arena *a, u64 size) {
+inline void* Arena_take_zero(Arena *a, u64 size) {
     void* mem = Arena_take(a, size);
     MemoryZero(mem, size);
     return mem;
 }
 
 void Arena_reset(Arena *a, u64 pos) {
-    ASSERTM(pos < a->pos, "No need to reset Arena!");
+    ASSERTM(pos <= a->pos, "No need to reset Arena!");
     if (pos < a->pos) {
         pos = MAX(pos, sizeof(Arena));
 
@@ -112,13 +116,55 @@ void Arena_reset_all(Arena *a) {
 
 ArenaSession ArenaSession_begin(Arena *a) {
     ArenaSession s;
-    s.Arena = a;
+    s.arena = a;
     s.save_point = a->pos;
     return s;
 }
 
 void ArenaSession_end(ArenaSession s) {
-    Arena_reset(s.Arena, s.save_point);
+    if (s.arena) {
+        Arena_reset(s.arena, s.save_point);
+    }
 }
+
+
+/* Scratch Memory */
+#define LCF_SCRATCH_COUNT 2
+per_thread Arena* _arena_scratch_pool[LCF_SCRATCH_COUNT];
+void Arena_thread_init_scratch() {
+    if (_arena_scratch_pool[0] == 0) {
+        for (s32 i = 0; i < LCF_SCRATCH_COUNT; i++) {
+            _arena_scratch_pool[i] = Arena_create();
+        }
+    }
+}
+
+Arena* Arena_scratch_custom(Arena** conflicts, s32 n) {
+    Arena_thread_init_scratch();
+    Arena* out = 0;
+    for (s32 i = 0; i < LCF_SCRATCH_COUNT; i++) {
+        out = _arena_scratch_pool[i];
+        for (s32 j = 0; j < n; j++) {
+            if (out == conflicts[j]) {
+                out = 0;
+            }
+        }
+
+        if (out != 0) {
+            break;
+        }
+    }
+    return out;
+}
+
+ArenaSession Scratch_session_custom(Arena** conflicts, s32 n) {
+    ArenaSession out = ZERO_STRUCT;
+    Arena *s = Arena_scratch_custom(conflicts, n);
+    if (s) {
+        out = ArenaSession_begin(s);
+    }
+    return out;
+}
+
 /** **************************************/
 #undef B_PTR

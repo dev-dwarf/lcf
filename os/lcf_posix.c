@@ -1,6 +1,6 @@
 #include "lcf_posix.h"
 
-void os_Init() {
+void os_PlatformInit() {
     os_GetPageSize();
 }
 
