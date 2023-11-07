@@ -1,5 +1,9 @@
 #include "lcf_string.h"
 #include <string.h> /* only for memset, memcpy */
+
+#define STB_SPRINTF_IMPLEMENTATION
+#include "stb_sprintf.h"
+
 /** ASCII                            **/
 #define RET_STR(s,l)                           \
     str _s = ZERO_STRUCT;                      \
@@ -123,6 +127,25 @@ str str_make_cstring(Arena *a, str s) {
     cp.str[s.len] = '\0';
     return cp;
 }
+
+static str strfv(Arena *a, char *fmt, va_list args) {
+    str result = ZERO_STRUCT;
+    va_list args2;
+    va_copy(args2, args);
+    result.len = stbsp_vsnprintf(0, 0, fmt, args2);
+    result.str = Arena_take_array(a, ch8, result.len+1);
+    stbsp_vsnprintf(result.str, (s32)result.len, fmt, args);
+    return result;
+}
+
+str strf(Arena *a, char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    str result = strfv(a, fmt, args);
+    va_end(args);
+    return result;
+}
+
 
 /* Comparisons / Predicates */
 b32 str_eq(str a, str b) {

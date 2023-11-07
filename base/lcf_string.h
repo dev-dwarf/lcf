@@ -1,6 +1,8 @@
 #if !defined(LCF_STRING)
 #define LCF_STRING "1.0.0"
 
+#include <stdarg.h>
+
 #include "lcf_types.h"
 #include "lcf_memory.h"
 
@@ -37,6 +39,8 @@ str str_copy(Arena *a, str s);
 str str_copy_custom(void* memory, str s);
 str str_concat(Arena *a, str s1, str s2);
 str str_make_cstring(Arena *a, str s);
+str str_formatv(Arena *a, char *fmt, va_list args);
+str str_format(Arena *a, char *fmt, ...);
 
 /* Comparisons / Predicates */
 #define str_is_empty(s) ((b32)((s).len == 0))
@@ -65,23 +69,6 @@ str str_trim_whitespace_back(str s);
 str str_trim_last_slash(str s);
 str str_trim_file_type(str s);
 str str_get_file_type(str s);
-
-/* Rendering */
-/* TODO(lcf): printing primitive types to str */
-struct StrRender { /* TODO(lcf) shit name */
-    Arena *a;
-    /* other options:
-       specify length
-       always show sign
-       left align
-       right align
-       hex, oct, decimal
-    */
-};
-typedef struct StrRender StrRender;
-str str_s64(StrRender* options, s64 u);
-str str_f64(StrRender* options, f64 u);
-/* etc */
 
 /* Iterations */
 #define str_iter_custom(s, i, c)                           \
@@ -177,7 +164,6 @@ void StrList_pushn(Arena *a, StrList *list, u32 n, str str[]);
         StrNode _narray[] =  {n, __VA_ARGS__};                          \
         StrList_push_noden(list, sizeof(_narray)/sizeof(StrNode), _narray); \
     } while(0);
-
 
 void StrList_prepend(StrList *list, StrList nodes);
 void StrList_append(StrList *list, StrList nodes);
