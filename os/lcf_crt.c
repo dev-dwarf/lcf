@@ -36,7 +36,7 @@ b32 os_WriteFile(str filepath, StrList text) {
 xb}
 b32 os_DeleteFile(str path) {
     s32 result = remove(path.str);
-    return result >= 0;
+    return result == 0; /* 0 is success */
 }
 
 #define SEC_USERR (1 << 8)

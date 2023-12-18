@@ -17,19 +17,16 @@ u64 os_GetPageSize() {
     return (u64) win32_sys_info.dwPageSize;
 }
 
+static u64 win32_RoundUpSize(u64 size, u64 snap) {
+    return ((size-1) | (snap-1))+1;
+}
+
 void* os_Reserve(upr size) {
-    u64 snapped = size;
-    snapped += LCF_MEMORY_RESERVE_SIZE - 1;
-    snapped -= snapped & LCF_MEMORY_RESERVE_SIZE;
-    return VirtualAlloc(0, snapped, MEM_RESERVE, PAGE_NOACCESS);
+    return VirtualAlloc(0, win32_RoundUpSize(size, LCF_MEMORY_RESERVE_SIZE), MEM_RESERVE, PAGE_NOACCESS);
 }
 
 b32 os_Commit(void *memory, upr size) {
-    u64 snapped = size;
-    snapped += LCF_MEMORY_COMMIT_SIZE - 1;
-    snapped -= snapped & LCF_MEMORY_COMMIT_SIZE;
-    void* p = VirtualAlloc(memory, snapped, MEM_COMMIT, PAGE_READWRITE);
-    return p != 0;
+    return !!VirtualAlloc(memory, win32_RoundUpSize(size, LCF_MEMORY_COMMIT_SIZE), MEM_COMMIT, PAGE_READWRITE);
 }
 
 void os_Decommit(void *memory, upr size) {
@@ -95,6 +92,15 @@ b32 os_WriteFile(str filepath, StrList text) {
     }
     
     return bytesWrittenTotal == text.total_len;
+}
+
+b32 os_DeleteFile(str path) {
+    b32 deleted;
+    SCRATCH_SESSION(scratch) {
+        str safe_path = str_make_cstring(scratch.arena, path);
+        deleted = DeleteFile(safe_path.str);
+    }
+    return deleted != 0; /* anything but 0 is success! */
 }
 
 os_FileInfo win32_GetFileInfo(Arena *arena, HANDLE filehandle, WIN32_FIND_DATA fd) {

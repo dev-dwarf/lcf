@@ -26,6 +26,8 @@
 #define MemoryZeroStruct(p) MemoryZero((p), sizeof(*(p)))
 #define MemoryZeroArray(a) MemoryZero((a), sizeof(a))
 
+#define StructEqual(s1, s2) memcmp(&(s1), &(s2), sizeof(s1))
+
 /** ******************************** **/
 
 
