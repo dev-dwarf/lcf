@@ -105,7 +105,7 @@
     ArenaSession_(begin|end) procs to cover the most common scenario.
                                      **/
 struct Arena {
-    upr pos;
+    u64 pos;
     u64 size;
     s32 alignment;
     s32 commited_pos; /* In pages (LCF_MEMORY_COMMIT_SIZE) */
@@ -130,6 +130,7 @@ inline void* Arena_take_zero_custom(Arena *a, u64 size, u32 alignment);
 
 /* Reset Arena to a certain position */
 void Arena_reset(Arena *a, u64 pos);
+void Arena_resetp(Arena *a, void* previous_alloc);
 void Arena_reset_all(Arena *a);
 
 /* Arena sessions - wraps resetting memory */

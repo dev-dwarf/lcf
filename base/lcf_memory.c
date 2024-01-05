@@ -110,6 +110,12 @@ void Arena_reset(Arena *a, u64 pos) {
     }
 }
 
+void Arena_resetp(Arena *a, void* previous_alloc) {
+    u64 pos = ((u8*)(previous_alloc) - (u8*)(a));
+    ASSERT(pos <= a->pos);
+    Arena_reset(a, pos);
+}
+
 void Arena_reset_all(Arena *a) {
     Arena_reset(a, 0);
 }
