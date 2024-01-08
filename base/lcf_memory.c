@@ -89,7 +89,6 @@ inline void* Arena_take_zero(Arena *a, u64 size) {
 }
 
 void Arena_reset(Arena *a, u64 pos) {
-    ASSERTM(pos <= a->pos, "No need to reset Arena!");
     if (pos < a->pos) {
         pos = MAX(pos, sizeof(Arena));
 
@@ -112,7 +111,6 @@ void Arena_reset(Arena *a, u64 pos) {
 
 void Arena_resetp(Arena *a, void* previous_alloc) {
     u64 pos = ((u8*)(previous_alloc) - (u8*)(a));
-    ASSERT(pos <= a->pos);
     Arena_reset(a, pos);
 }
 
