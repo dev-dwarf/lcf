@@ -117,8 +117,6 @@ os_FileInfo win32_GetFileInfo(Arena *arena, HANDLE filehandle, WIN32_FIND_DATA f
     if (filehandle != INVALID_HANDLE_VALUE) {
         if (arena != 0) {
             result.name = str_copy(arena, str_from_cstring(fd.cFileName));
-            /* TODO: getting the path this way does not work. How on earth
-               are you supposed to get the path of a file in Win32!! */
             result.path = str_create_size(arena, MAX_PATH+1);
             result.path.len = GetFullPathNameA(fd.cFileName, (DWORD) result.path.len, result.path.str, 0);
         }

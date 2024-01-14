@@ -78,13 +78,13 @@ inline void* Arena_take(Arena *a, u64 size) {
 
 inline void* Arena_take_zero_custom(Arena *a, u64 size, u32 alignment) {
     void* mem = Arena_take_custom(a, size, alignment);
-    MemoryZero(mem, size);
+    memset(mem, 0, size);
     return mem;
 }
 
 inline void* Arena_take_zero(Arena *a, u64 size) {
     void* mem = Arena_take(a, size);
-    MemoryZero(mem, size);
+    memset(mem, 0, size);
     return mem;
 }
 
@@ -103,7 +103,7 @@ void Arena_reset(Arena *a, u64 pos) {
         
         if (LCF_MEMORY_DEBUG_CLEAR) {
             /* Clear memory between pos and a->pos */
-            MemorySet((void*) ((u64)a+pos), LCF_MEMORY_ARENA_CLEAR, a->pos - pos);
+            memset((void*) ((u64)a+pos), LCF_MEMORY_ARENA_CLEAR, a->pos - pos);
         }
         a->pos = pos;
     }
