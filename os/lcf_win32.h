@@ -3,6 +3,10 @@
 
 #include "../base/lcf_base.h"
 
+#define NOSHOWWINDOW
+#define NOGDI
+#define NOUSER
+#define NO
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
