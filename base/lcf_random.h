@@ -73,8 +73,10 @@ inline f32 rand_normalf32(RNG *r) {
     do {
         /* inlined equivalent to randf32_range(r, -1, 1) to not make an extra randu64 call */
         u64 s = randu64(r);
-        u32 sx = ((0x7F << 23) | (u32)(s >> 9));
-        u32 sy = ((0x7F << 23) | (u32)(s >> (9+32)));
+        u32 sx = s;
+        u32 sy = s >> 32;
+        sx = ((0x7F << 23) | (sx >> 9));
+        sy = ((0x7F << 23) | (sy >> 9));
         x = *((f32*) &sx);
         y = *((f32*) &sy);
         x -= 1.5f; x *= 2.0;
@@ -95,7 +97,7 @@ inline f64 rand_normalf64(RNG *r) {
 
     f64 x,y,R;
 
-    do { /* Box-Mueller */
+    do { /* Box-Mueller, Marsaglia Polar */
         x = randf64(r)*2.0 - 1.0;
         y = randf64(r)*2.0 - 1.0;
         R = x*x + y*y;
