@@ -57,6 +57,8 @@ s64 str_char_location(str s, ch8 c);
 s64 str_char_location_backward(str s, ch8 find); 
 s64 str_substring_location(str s, str sub);
 s64 str_delimiter_location(str s, str delims); 
+char char_lower(char c);
+char char_upper(char c);
 
 /* Conditional Operations */
 str str_trim_prefix(str s, str prefix);

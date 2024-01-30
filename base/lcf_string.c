@@ -252,6 +252,22 @@ s64 str_delimiter_location(str s, str delims) {
     return LCF_STRING_NO_MATCH;
 }
 
+static read_only s32 LCF_CHAR_LOWER = 'a' - 'A';
+char char_lower(char c) {
+    if (c >= 'A' && c <= 'Z') {
+        c += LCF_CHAR_LOWER;
+    }
+    return c;
+}
+
+static read_only s32 LCF_CHAR_UPPER = 'A' - 'a';
+char char_upper(char c) {
+    if (c >= 'a' && c <= 'z') {
+        c += LCF_CHAR_UPPER;
+    }
+    return c;
+}
+
 /* Conditional Operations */
 str str_trim_prefix(str s, str prefix) {
     if (str_has_prefix(s, prefix)) {
