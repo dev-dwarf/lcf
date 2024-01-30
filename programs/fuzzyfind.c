@@ -35,7 +35,8 @@ int main() {
     SetTargetFPS(60);
 
     s32 font_size = 20;
-    Font font = LoadFontEx("../dd-1/assets/BerkeleyMono-Regular.ttf", font_size, 0, 0);
+    s32 font_spacing = font_size / 10;
+    Font font = LoadFontEx("C:/Code/dd-1/assets/BerkeleyMono-Regular.ttf", font_size, 0, 0);
 
     Command command[] = {
         (Command){ .display = strl("File: New")},
@@ -168,7 +169,7 @@ int main() {
 
         Vector2 size = MeasureTextEx(font, search.str, font_size, 0);
         size.x = GetScreenWidth() - 75;
-		DrawTextEx(font, search.str, (Vector2){(GetScreenWidth()-size.x)*0.5, GetScreenHeight()*0.5}, font_size, 0, BLACK);
+		DrawTextEx(font, search.str, (Vector2){(GetScreenWidth()-size.x)*0.5, GetScreenHeight()*0.5}, font_size, font_spacing, BLACK);
 
         Color c = BLACK;
         for (s32 j = 0; j < search_range; j++) {
@@ -176,7 +177,7 @@ int main() {
 
             char buf[128];
             stbsp_sprintf(buf, "%d: %.*s", command[j].score, command[j].display.len, command[j].display.str);
-            DrawTextEx(font, buf, (Vector2){(GetScreenWidth()-size.x)*0.5, GetScreenHeight()*0.5 + (j+1)*size.y}, font_size, 0, c);
+            DrawTextEx(font, buf, (Vector2){(GetScreenWidth()-size.x)*0.5, GetScreenHeight()*0.5 + (j+1)*size.y}, font_size, font_spacing, c);
         }
 
         DrawFPS(16, 16);
