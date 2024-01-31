@@ -24,7 +24,7 @@ s32 order_command(const void *a, const void *b) {
     Command *d = (Command *)b;
     s32 out = d->score - c->score;
     if (!out) {
-        out = c - d;
+        out = d - c;
     }
     return out;
 }
@@ -129,32 +129,40 @@ int main() {
             for (s32 j = 0; j < search_range; j++) {
                 Command *c = command + j;
                 c->score = 0;
-                
-                s32 run = 0;
-                char *p = c->display.str;
-                char *q = search.str;
-                while (*p && *q) {
-                    if (char_lower(*p) == char_lower(*q)) {
-                        run = MAX(100, run+100);
-                        c->score = CLAMPBOTTOM(c->score, 0);
-                        q++;
-                    } else {
-                        run = MIN(-10, run-10);
-                        ++p;
-                    }
-                    c->score += run;
 
-                    while (*p == ' ') *p++;
-                    while (*q == ' ') *q++;
+                str_iter_pop_whitespace_custom(search, search_sub)  {
+                    s32 best = 0;
+                    str_iter_pop_whitespace_custom(c->display, sub) {
+                        str p = sub;
+                        str q = search_sub;
+                        s32 run = 0;
+                        s32 score = 0;
+                        while (p.len > 0 && q.len > 0) {
+                            if (char_lower(*p.str) == char_lower(*q.str)) {
+                                run = MAX(50, run+100);
+                                score += run - (*p.str != *q.str);
+                                q = str_skip(q, 1);
+                            } else {
+                                run = 0;
+                                score -= 10;
+                            }
+                            p = str_skip(p, 1);
+                        }
+                        
+                        if (score > best) {
+                            best = score;
+                        }
+                    }
+                    c->score += best;
                 }
 
-                c->score -= c->display.len;
+                c->score -= ABS(c->display.len - search.len);
             }
-            
+
             qsort(command, search_range, sizeof(Command), order_command);
 
-            if (search.len > 3) {
-                s32 threshold = MIN(0.4, search.len*0.05)*command[0].score;
+            if (search.len > 2) {
+                s32 threshold = MIN(0.2, search.len*0.03)*command[0].score;
                 for (s32 j = 0; j < search_range; j++) {
                     if (command[j].score < threshold) {
                         search_range = j;
