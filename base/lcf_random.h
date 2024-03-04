@@ -62,6 +62,7 @@ inline s32 randsign(RNG *r) {
     return randbool(r)? 1 : -1;
 }
 
+#include <math.h>
 inline f32 rand_normalf32(RNG *r) {
     if (r->has_normal) {
         r->has_normal = false;
@@ -73,8 +74,8 @@ inline f32 rand_normalf32(RNG *r) {
     do {
         /* inlined equivalent to randf32_range(r, -1, 1) to not make an extra randu64 call */
         u64 s = randu64(r);
-        u32 sx = s;
-        u32 sy = s >> 32;
+        u32 sx = (u32) s;
+        u32 sy = (u32) (s >> 32);
         sx = ((0x7F << 23) | (sx >> 9));
         sy = ((0x7F << 23) | (sy >> 9));
         x = *((f32*) &sx);

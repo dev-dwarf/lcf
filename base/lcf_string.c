@@ -12,16 +12,16 @@
     return _s;
 
 /* Create strs */
-str str_from(ch8* s, s64 len) {
+str str_from(char* s, s64 len) {
     RET_STR(s, len);
 }
 
-str str_from_pointer_range(ch8 *p1, ch8 *p2) {
+str str_from_pointer_range(char *p1, char *p2) {
     RET_STR(p1, (s64)(p2 - p1));
 }
 
-str str_from_cstring(ch8 *cstr) {
-    ch8* p2 = cstr;
+str str_from_cstring(char *cstr) {
+    char* p2 = cstr;
     while(*p2 != 0)
         p2++;
     return str_from_pointer_range(cstr, p2);
@@ -67,7 +67,7 @@ str str_substr(str s, s64 start, s64 n) {
 str str_create_size(Arena *a, s64 len) {
     str s;
     s.len = len;
-    s.str = (ch8*) Arena_take_zero(a, s.len);
+    s.str = (char*) Arena_take_zero(a, s.len);
     return s;
 }
 
@@ -78,7 +78,7 @@ str str_copy(Arena *a, str s) {
 str str_copy_custom(void* memory, str s) {
     str copy;
     copy.len = s.len;
-    copy.str = (ch8*) memory;
+    copy.str = (char*) memory;
     memcpy(memory, s.str, s.len);
     return copy;
 }
@@ -90,15 +90,15 @@ str str_copy_first_n(Arena *a, str s, s64 n) {
 
 str str_copy_first_n_custom(void* memory, str s, s64 n) {
     s = str_first(s, n);
-    return str_copy_custom((ch8*) memory, s);
+    return str_copy_custom((char*) memory, s);
 }
  
-str str_copy_cstring(Arena *a, ch8 *c) {
+str str_copy_cstring(Arena *a, char *c) {
     str cstr = str_from_cstring(c);
     return str_copy(a, cstr);
 }
 
-str str_from_cstring_custom(str dest, ch8 *c) {
+str str_from_cstring_custom(str dest, char *c) {
     str out = ZERO_STRUCT;
     out.str = dest.str;
     while (out.len < dest.len && *c != '\0') {
@@ -113,7 +113,7 @@ str str_from_cstring_custom(str dest, ch8 *c) {
 str str_concat(Arena *a, str s1, str s2) {
     str concat;
     concat.len = s1.len + s2.len;
-    concat.str = (ch8*) Arena_take(a, concat.len);
+    concat.str = (char*) Arena_take(a, concat.len);
     memcpy(concat.str, s1.str, s1.len);
     memcpy(concat.str+s1.len, s2.str, s2.len);
     return concat;
@@ -122,7 +122,7 @@ str str_concat(Arena *a, str s1, str s2) {
 str str_make_cstring(Arena *a, str s) {
     str cp;
     cp.len = s.len;
-    cp.str = (ch8*) Arena_take(a, cp.len+1);
+    cp.str = (char*) Arena_take(a, cp.len+1);
     memcpy(cp.str, s.str, s.len);
     cp.str[s.len] = '\0';
     return cp;
@@ -133,7 +133,7 @@ static str strfv(Arena *a, char *fmt, va_list args) {
     va_list args2;
     va_copy(args2, args);
     result.len = stbsp_vsnprintf(0, 0, fmt, args2);
-    result.str = Arena_take_array(a, ch8, result.len+1);
+    result.str = Arena_take_array(a, char, result.len+1);
     stbsp_vsnprintf(result.str, (s32)result.len, fmt, args);
     return result;
 }
@@ -166,22 +166,23 @@ b32 str_has_suffix(str s, str suffix) {
         (memcmp(s.str+(s.len-suffix.len), suffix.str, suffix.len) == 0);
 }
 
-b32 ch8_is_whitespace(ch8 c) {
+b32 char_is_whitespace(char c) {
     switch (c) {
     case ' ':
     case '\n':
     case '\t':
     case '\r':
+    case '\v':
         return true;
     default:
         return false;
     }
 }
 
-b32 str_contains_char(str s, ch8 find) {
+b32 str_contains_char(str s, char find) {
     return str_char_location(s,find) != LCF_STRING_NO_MATCH;
 }
-s64 str_char_location(str s, ch8 find) {
+s64 str_char_location(str s, char find) {
     str_iter(s) {
         if (c == find) {
             return i;
@@ -189,7 +190,7 @@ s64 str_char_location(str s, ch8 find) {
     }
     return LCF_STRING_NO_MATCH;
 }
-s64 str_char_location_backward(str s, ch8 find) {
+s64 str_char_location_backward(str s, char find) {
     str_iter_backward(s) {
         if (c == find) {
             return i;
@@ -202,7 +203,7 @@ s64 str_first_whitespace_location(str s) {
         return LCF_STRING_NO_MATCH;
     }
     str_iter(s) {
-        if (ch8_is_whitespace(c)) {
+        if (char_is_whitespace(c)) {
             return i;
         }
     }
@@ -252,7 +253,7 @@ s64 str_delimiter_location(str s, str delims) {
     return LCF_STRING_NO_MATCH;
 }
 
-static read_only s32 LCF_CHAR_LOWER = 'a' - 'A';
+static read_only char LCF_CHAR_LOWER = 'a' - 'A';
 char char_lower(char c) {
     if (c >= 'A' && c <= 'Z') {
         c += LCF_CHAR_LOWER;
@@ -260,7 +261,7 @@ char char_lower(char c) {
     return c;
 }
 
-static read_only s32 LCF_CHAR_UPPER = 'A' - 'a';
+static read_only char LCF_CHAR_UPPER = 'A' - 'a';
 char char_upper(char c) {
     if (c >= 'a' && c <= 'z') {
         c += LCF_CHAR_UPPER;
@@ -292,7 +293,7 @@ str str_trim_whitespace(str s) {
 
 str str_trim_whitespace_front(str s) {
     /* trim from start */
-    while ((s.len > 0) && ch8_is_whitespace(s.str[0])) {
+    while ((s.len > 0) && char_is_whitespace(s.str[0])) {
         s.str++;
         s.len--;
     }
@@ -301,15 +302,10 @@ str str_trim_whitespace_front(str s) {
 
 str str_trim_whitespace_back(str s) {
     /* trim from end */
-    while ((s.len > 0) && ch8_is_whitespace(s.str[s.len-1])) {
+    while ((s.len > 0) && (char_is_whitespace(s.str[s.len-1]) || s.str[s.len-1] == 0)) {
         s.len--;
     }
 
-    /* trim null character(s) from end */
-    while ((s.len > 0) && s.str[s.len-1]) {
-        s.len--;
-    }
-    
     return s;
 }
 
@@ -380,6 +376,344 @@ str str_pop_at_first_whitespace(str *src) {
         s.len = match;
     }
     return s;
+}
+
+
+/* Parsing */
+u64 str_to_u64(str s, s32 *failure) {
+    s32 base = 10;
+    if (s.str[0] == '0') {
+        if (s.str[1] == 'x') {
+            base = 16;
+            s.str += 2; s.len -= 2;
+        } else if (s.str[1] == 'b') {
+            base = 2;
+            s.str += 2; s.len -= 2;
+        } else {
+            base = 8;
+            s.str += 1; s.len -= 1;
+        }
+    }
+
+    s32 i = 0;
+    u64 n = 0;
+    switch (base) {
+        case 2: {
+            s.len = MIN(s.len, 64); // 64 = log(2^64)/log(2)
+            for (i = 0; i < s.len; i++) {
+                u8 digit = s.str[i] - '0';
+                if (digit >= 2) {
+                    break;
+                }
+                n = 2*n + digit;
+            }
+        } break;
+        case 8: {
+            s.len = MIN(s.len, 21); // 21 = log(2^64)/log(8)
+            for (i = 0; i < s.len; i++) {
+                u8 digit = s.str[i] - '0';
+                if (digit >= 8) {
+                    break;
+                }
+                n = 8*n + digit;
+            }
+        } break;
+        case 10: {
+            s.len = MIN(s.len, 19); // 19 = log(2^64)/log(10)
+            for (i = 0; i < s.len; i++) {
+                u8 digit = s.str[i] - '0';
+                if (digit >= 10) {
+                    break;
+                }
+                n = 10*n + digit;
+            }
+        } break;
+        case 16: {
+            s.len = MIN(s.len, 16); // 16 = log(2^64)/log(16)
+            for (i = 0; i < s.len; i++) {
+                u8 digit = s.str[i] - '0';
+                if (digit >= 10) digit = (s.str[i]|32) + 10 - 'a';
+                if (digit >= 16) {
+                    break;
+                }
+                n = 16*n + digit;
+            }
+        } break;
+    }
+
+    if (i == 0) {
+        if (failure) *failure = 1;
+        return 0;
+    }
+
+    if (failure) *failure = 0;
+    return n;
+}
+
+s64 str_to_s64(str s, s32 *failure) {
+    u64 sign = 0;
+    if (s.str[0] == '-' || s.str[0] == '+') {
+        sign = s.str[0] == '-'? -1 : 0;
+        s.str++; s.len--;
+    }
+
+    u64 u = str_to_u64(s, failure);
+    if (failure && *failure) {
+        return 0;
+    } else {
+        return (s64)((u^sign)-sign);
+    }
+}
+
+#ifndef INFINITY
+#define INFINITY (1e5000f)
+#endif
+#ifndef NAN
+#define NAN (0.0/0.0)
+#endif
+
+f64 str_to_f64(str s, s32 *failure) {
+    s32 i;
+    str p = str_trim_whitespace(s);
+
+    s32 sign = 1;
+    if (*p.str == '+' || *p.str == '-') {
+        sign = (*p.str == '-')? -1 : 1;
+        p.str += 1; p.len -= 1;
+    }
+
+    { // match inf and infinity
+        for (i = 0; i < MIN(8, p.len); i++) {
+            if ((p.str[i]|32) != "infinity"[i]) {
+                break;
+            }
+        }
+        if (i == 3 || i == 8) { 
+            if (failure) *failure = 0;
+            return sign * INFINITY;
+        } else if (i > 0) {
+            if (failure) *failure = 1;
+            return 0.0;
+        }
+    }
+
+    { // match nan 
+        for (i = 0; i < MIN(3, p.len); i++) {
+            if ((p.str[i]|32) != "nan"[i]) {
+                break;
+            }
+        }
+        if (i == 3) {
+            if (failure) *failure = 0;
+            return NAN;
+        } else if (i > 0) {
+            return 1;
+        }
+    }
+
+    b32 is_hex = 0;
+    if (p.str[0] == '0' && p.str[1] == 'x') { // Hex
+        is_hex = 1;
+        p.str += 2; p.len -= 2;
+    }
+
+    { // skip leading zeros
+        for (i = 0; i < p.len; i++) {
+            if (p.str[i] != '0') {
+                break;
+            }
+        }
+        p.str += i; p.len -= i;
+    }
+
+    b32 got_frac = 0;
+    s32 exp_offset = 0;
+    if (*p.str == '.') { // dot before digits, eg 0.505
+        got_frac = 1;
+        p.str += 1; p.len -= 1;
+
+        { // handle zeros after dot, eg 0.000000000505
+            for (i = 0; i < p.len; i++) {
+                if (p.str[i] != '0') {
+                    break;
+                }
+            }
+            p.str += i; p.len -= i;
+            exp_offset = -i;
+        }
+    }
+
+    u64 mantissa = 0;
+    if (p.len > 0) {
+        if (is_hex) {
+            s32 len = MIN((s32)p.len, 19); // NOTE(lf): 19 = floor(log10(2^64))
+            s32 zeros = 0;
+
+            { // Catch garbage strings
+                u8 digit = p.str[i] - '0';
+                if (digit >= 10) digit = 10 + (p.str[i]|32)-'a';
+                if (digit > 16) {
+                    if (failure) *failure = 1;
+                    return 0.0;
+                }
+            }
+                
+            for (i = 0; i < len; i++) {
+                if (p.str[i] == '.') {
+                    if (got_frac) {
+                        p.len = i;
+                        break;
+                    }
+                    got_frac = 1;
+                    exp_offset -= i-1; 
+                    continue;
+                }
+            
+                u8 digit = p.str[i] - '0';
+                if (digit >= 10) digit = 10 + (p.str[i]|32)-'a';
+                if (digit < 16) {
+                    if (digit > 0) {
+                        if (got_frac) {
+                            exp_offset -= 1 + zeros;
+                        }
+                        while (zeros > 0) {
+                            mantissa *= 16;
+                            zeros--;
+                        }
+                        mantissa = mantissa*16 + digit; 
+                    } else {
+                        zeros++;
+                    }
+                } else {
+                    break;
+                }
+            }
+            if (zeros > 0 && !got_frac) {
+                exp_offset += zeros;
+            }
+            p.str += i; p.len -= i;
+        } else {
+            s32 len = MIN((s32)p.len, 19); // NOTE(lf): 19 = floor(log10(2^64))
+            s32 zeros = 0;
+
+            { // Catch garbage strings
+                u8 digit = *p.str - '0';
+                if (digit >= 10) {
+                    if (failure) *failure = 1;
+                    return 0.0;
+                }
+            }
+                
+            for (i = 0; i < len; i++) {
+                if (p.str[i] == '.') {
+                    if (got_frac) {
+                        p.len = i;
+                        break;
+                    }
+                    got_frac = 1;
+                    exp_offset -= i-1; 
+                    continue;
+                }
+            
+                u8 digit = p.str[i] - '0';
+                if (digit < 10) {
+                    if (digit > 0) {
+                        if (got_frac) {
+                            exp_offset -= 1 + zeros;
+                        }
+                        while (zeros > 0) {
+                            mantissa *= 10;
+                            zeros--;
+                        }
+                        mantissa = mantissa*10 + digit; 
+                    } else {
+                        zeros++;
+                    }
+                } else {
+                    break;
+                }
+            }
+            if (zeros > 0 && !got_frac) {
+                exp_offset += zeros;
+            }
+            p.str += i; p.len -= i;
+        }
+    }
+
+    if (mantissa == 0) {
+        if (failure) *failure = 0;
+        return sign == -1? -0.0 : 0.0;
+    }
+
+    f64 f = (f64)(sign*mantissa);
+
+    s32 exp = 0;
+    char exp_delim = (is_hex)? 'p' : 'e';
+    for (i = 0; i < p.len; i++) {
+        if ((p.str[i]|32) == exp_delim) {
+            break;
+        }
+    }
+    p.str += i+1; p.len -= i+1;
+    
+    if (p.len > 0) {
+        s32 exp_sign = 1;
+        if (*p.str == '+' || *p.str == '-') {
+            exp_sign = (*p.str == '-')? -1 : 1;
+            p.str += 1; p.len -= 1;
+        }
+
+        b32 got_digit = 0;
+        for (i = 0; i < p.len; i++) {
+            u8 digit = p.str[i] - '0';
+            if (digit >= 10) {
+                break;
+            }
+            got_digit = 1;
+            exp = 10 * exp + digit;
+        }
+
+        if (!got_digit) {
+            if (failure) *failure = 1;
+            return 0.0;
+        } 
+        
+        exp = (exp * exp_sign);
+    }
+
+    if (is_hex) {
+        exp += 4*exp_offset;
+        while (exp > 0) {
+            f *= 2; exp--;
+            // Goofy ahh optimization attempt
+            if (exp >=+16) { f *= 0x1p+16; exp -= 16; }
+            if (exp >=+8) { f *= 0x1p+8; exp -= 8; }
+            if (exp >=+4) { f *= 0x1p+4; exp -= 4; }
+        }
+        while (exp < 0) {
+            f *= 0.5; exp++;
+            if (exp <=-16) { f *= 0x1p-16; exp += 16; }
+            if (exp <=-8) { f *= 0x1p-8; exp += 8; }
+            if (exp <=-4) { f *= 0x1p-4; exp += 4; }
+        }
+    } else {
+        exp += exp_offset;
+        while (exp > 0) {
+            f *= 10.0; exp--;
+            if (exp >=+16) { f *= 1e+16; exp -= 16; }
+            if (exp >=+8) { f *= 1e+8; exp -= 8; }
+            if (exp >=+4) { f *= 1e+4; exp -= 4; }
+        }
+        while (exp < 0) {
+            f *= 0.1; exp++;
+            if (exp <=-16) { f *= 1e-16; exp += 16; }
+            if (exp <=-8) { f *= 1e-8; exp += 8; }
+            if (exp <=-4) { f *= 1e-4; exp += 4; }
+        }
+    }
+
+    if (failure) *failure = 0;
+    return f;
 }
 
 #undef RET_STR
@@ -533,10 +867,10 @@ str StrList_join(Arena *a, StrList list, StrJoin join) {
     result.len = join.prefix.len +
         list.total_len + join.seperator.len*((list.count > 1)? list.count - 1: 0) +
         join.suffix.len;
-    result.str = Arena_take_array(a, ch8, result.len);
+    result.str = Arena_take_array(a, char, result.len);
 
     /* Fill result */
-    ch8 *ptr = result.str;
+    char *ptr = result.str;
 
     MemoryCopy(ptr, join.prefix.str, join.prefix.len);
     ptr += join.prefix.len;
@@ -569,25 +903,5 @@ StrList StrList_copy(Arena *a, StrList list) {
     return copy;
 }
 
-StrList StrList_reverse(Arena *a, StrList list) {
-    StrList out = ZERO_STRUCT;
-    /* TODO allocate new nodes instead of interfering with old list 
-    StrNode *cur = list->first, *prev = 0, *temp;
-    while(cur != list->last) {
-        temp = cur->next;
-        cur->next = prev;
-        prev = cur;
-        cur = temp;
-    }
-
-    temp = list->first;
-    list->first = list->last;
-    list->last = temp;
-    */
-    
-    return out;
-}
 
 /** ******************************** **/
-
-/* TODO: formatting unsigned, signed, and floats */

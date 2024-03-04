@@ -34,6 +34,7 @@ void os_Decommit(void *memory, upr size) {
 }
 
 void os_Free(void *memory, upr size) {
+    (void) size;
     VirtualFree(memory, 0, MEM_RELEASE);
 }
 
@@ -66,7 +67,7 @@ str os_ReadFile(Arena *arena, str filepath) {
                Made this default because often the loaded string will need to be passed
                to other c APIs, making it convenient to not have to add the null later.
              */
-            ch8 *data = Arena_take_array(arena, ch8, size+1);
+            char *data = Arena_take_array(arena, char, size+1);
             win32_ReadBlock(file, data, size);
             data[size] = '\0';
             fileString.str = data;
@@ -187,8 +188,8 @@ u64 os_GetThreadID(void) {
 
 
 internal void win32_ReadBlock(HANDLE file, void* block, u64 block_size) {
-    ch8 *ptr = (ch8*) block;
-    ch8 *opl = ptr + block_size;
+    char *ptr = (char*) block;
+    char *opl = ptr + block_size;
     for (;;) {
         u64 unread = (u64)(opl-ptr);
         DWORD bytes_to_read = (DWORD)(CLAMPTOP(unread, u32_MAX));
@@ -221,7 +222,7 @@ internal s64 win32_WriteBlock(HANDLE file, StrList data) {
         if (n->str.len > u32_MAX) {
             toWrite = n->str.len >> 32;
             written = 0;
-            ch8 *back_half = &(n->str.str[u32_MAX]);
+            char *back_half = &(n->str.str[u32_MAX]);
             while (written != toWrite) {
                 WriteFile(file, back_half, toWrite, (LPDWORD) &written, 0);
             }

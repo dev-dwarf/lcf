@@ -7,22 +7,21 @@
 #include "lcf_memory.h"
 
 /** ASCII                            **/
-typedef char ch8;
 struct str { 
     s64 len;
-    ch8 *str;
+    char *str;
 };
 typedef struct str str;
 
 #define str_PRINTF_ARGS(s) (int)(s).len, (s).str
 
 /* Create strs */
-str str_from(ch8* s, s64 len);
-str str_from_pointer_range(ch8 *p1, ch8 *p2);
-str str_from_cstring(ch8 *cstr);
+str str_from(char* s, s64 len);
+str str_from_pointer_range(char *p1, char *p2);
+str str_from_cstring(char *cstr);
 
-#define strl(s) str_from((ch8*)s, (s64)sizeof(s)-1)
-#define strc(s) {sizeof(s)-1, (ch8*)s}
+#define strl(s) str_from((char*)s, (s64)sizeof(s)-1)
+#define strc(s) {sizeof(s)-1, (char*)s}
 global str str_EMPTY = {0, 0};
 
 /* Basic/fast operations */
@@ -48,13 +47,13 @@ str str_format(Arena *a, char *fmt, ...);
 b32 str_eq(str a, str b);
 b32 str_has_prefix(str s, str prefix);
 b32 str_has_suffix(str s, str suffix);
-b32 ch8_is_whitespace(ch8 c);
-b32 str_contains_char(str s, ch8 c);
+b32 char_is_whitespace(char c);
+b32 str_contains_char(str s, char c);
 b32 str_contains_substring(str s, str sub);
 b32 str_contains_delimiter(str s, str delims);
 #define LCF_STRING_NO_MATCH s64_MIN
-s64 str_char_location(str s, ch8 c);
-s64 str_char_location_backward(str s, ch8 find); 
+s64 str_char_location(str s, char c);
+s64 str_char_location_backward(str s, char find); 
 s64 str_substring_location(str s, str sub);
 s64 str_delimiter_location(str s, str delims); 
 char char_lower(char c);
@@ -75,14 +74,14 @@ str str_get_file_type(str s);
 /* Iterations */
 #define str_iter_custom(s, i, c)                           \
     s64 i = 0;                                              \
-    ch8 c = s.str[i];                                      \
+    char c = s.str[i];                                      \
     for (; (i < (s64) s.len); i++, c = s.str[i])
 
 #define str_iter(s) str_iter_custom(s, i, c)
 
 #define str_iter_backward_custom(s, i, c)                  \
     s64 i = s.len-1;                                        \
-    ch8 c = s.str[i];                                      \
+    char c = s.str[i];                                      \
     for (; (i >= 0); i--, c = s.str[i])
 
 #define str_iter_backward(s) str_iter_backward_custom(s, i, c)
