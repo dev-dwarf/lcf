@@ -156,6 +156,9 @@ char *bruh =  "{\
 					 'SortAs': 'SGML',\
 					 'GlossTerm': 'Standard Generalized Markup Language',\
 					 'Acronym': 'SGML',\
+					 'True': true, \
+					 'False': false, \
+					 'Null': null, \
 					 'Number': 1234,\
 					 'Hex': 0xDD,\
 					 'Float': 1.045e+3,\

@@ -5,6 +5,12 @@
 #define LCF_JSON_DEPTH 64
 #endif
 
+/* TODO move json stuff out of base, maybe have an "extras" folder */
+/* TODO clean up files, remove .c files. */
+/* TODO especially clean up strings, remove unused shit */
+/* TODO remove b32 and weird macros */
+/* TODO add convenience json functions for querying for keys and parsing numbers */
+
 enum JSON_TYPES {
     JSON_UNDEFINED = 0,
     JSON_OBJECT,
