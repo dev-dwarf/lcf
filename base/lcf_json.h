@@ -37,16 +37,17 @@ struct json_token {
 typedef struct json_token json_token;
 
 struct json {
+    Arena *arena;
     str input; 
+    
     json_token *token;
     s32 c; // cursor
     s32 tokens;
-    s32 tokens_cap;
     s32 line;
     
     // parent stack
-    s32 parent[LCF_JSON_DEPTH];
     s32 p;
+    s32 parent[LCF_JSON_DEPTH];
 };
 typedef struct json json;
 
@@ -57,6 +58,8 @@ static s32 _json_next_tok(json *j) {
         t->parent = j->parent[j->p];
     }
     s32 r = j->tokens++;
+    Arena_take_struct_zero(j->arena, json_token);
+    
     return r;
 }
 
@@ -65,9 +68,11 @@ s32 json_parse(json *j) {
 
     if (j->tokens == 0) {
         j->tokens++;
+        j->token = Arena_take_struct_zero(j->arena, json_token);
+        Arena_take_struct_zero(j->arena, json_token);
     }
     
-    while (s.len > 0 && j->tokens < j->tokens_cap) {
+    while (s.len > 0) {
         ASSERT(j->p < LCF_JSON_DEPTH);
     
         char c = *s.str; 
@@ -80,25 +85,24 @@ s32 json_parse(json *j) {
                 t->line = j->line;
                 t->n = 0;
                 s32 newp = _json_next_tok(j);
-                if (j->parent[j->p] != newp) {
-                    j->parent[++j->p] = newp;
-                }
+                j->parent[++j->p] = newp;
                 s = str_skip(s, 1);
             } break;
             case '}':
             case ']': {
                 json_token *par;
-                do {
-                    par = j->token + j->parent[j->p--];
-                } while (par->type != JSON_OBJECT && par->type != JSON_ARRAY);
-                par->str.len = s.str+1 - par->str.str;
+                for (; j->p > 0; j->p--) {
+                    par = j->token + j->parent[j->p];
+                    if (par->type != JSON_OBJECT && par->type != JSON_ARRAY) {
+                        par->str.len = s.str+1 - par->str.str;
+                        break;
+                    }
+                }
                 s = str_skip(s, 1);
             } break;
 
             case ':': {
-                if (j->parent[j->p] != j->tokens) {
-                    j->parent[++j->p] = j->tokens;
-                }
+                j->parent[++j->p] = j->tokens-1;
                 s = str_skip(s, 1);
             } break;
 
@@ -281,6 +285,7 @@ s32 json_parse(json *j) {
         }
     }
     j->c = s.str - j->input.str;
+    
     return 0;
 }
 

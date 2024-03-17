@@ -212,11 +212,10 @@ int main() {
     // jsmntok_t t = *pt;
     // printf("%s, %.*s\n", types[t.type], t.end - t.start, scene+t.start);
 
-    json_token token[1024];
+    Arena *a = Arena_create();
     json j = (json){
         .input = (str){.str = bruh, .len = strlen(bruh)},
-        .token = token,
-        .tokens_cap = 1024,
+        .arena = a,
     };
     json_parse(&j);
 
