@@ -15,6 +15,7 @@ enum JSON_TYPES {
     JSON_UNDEFINED = 0,
     JSON_OBJECT,
     JSON_ARRAY,
+    JSON_KEY,
     JSON_STRING,
     JSON_NULL,
     JSON_BOOL,
@@ -41,10 +42,10 @@ struct json {
     str input; 
     
     json_token *token;
-    s32 c; // cursor
+    s64 c; // cursor
     s32 tokens;
     s32 line;
-    
+
     // parent stack
     s32 p;
     s32 parent[LCF_JSON_DEPTH];
@@ -88,12 +89,22 @@ s32 json_parse(json *j) {
                 j->parent[++j->p] = newp;
                 s = str_skip(s, 1);
             } break;
-            case '}':
+            case '}': {
+                json_token *par;
+                for (; j->p > 0; j->p--) {
+                    par = j->token + j->parent[j->p];
+                    if (par->type == JSON_OBJECT) {
+                        par->str.len = s.str+1 - par->str.str;
+                        break;
+                    }
+                }
+                s = str_skip(s, 1);
+            } break;
             case ']': {
                 json_token *par;
                 for (; j->p > 0; j->p--) {
                     par = j->token + j->parent[j->p];
-                    if (par->type != JSON_OBJECT && par->type != JSON_ARRAY) {
+                    if (par->type == JSON_ARRAY) {
                         par->str.len = s.str+1 - par->str.str;
                         break;
                     }
@@ -120,11 +131,11 @@ s32 json_parse(json *j) {
             /* Strings */
             case '\"':
             case '\'': {
-                t->type = JSON_STRING;
+                t->type = (j->token[j->parent[j->p]].type == JSON_KEY)? JSON_STRING : JSON_KEY;
                 t->n = 0;
 
                 s = str_skip(s, 1);
-                s32 loc = str_char_location(s, c);
+                s64 loc = str_char_location(s, c);
                 loc = (loc != LCF_STRING_NO_MATCH)? loc : s.len;
                 t->str = str_first(s, loc);
                 s = str_skip(s, loc+1);
@@ -286,6 +297,38 @@ s32 json_parse(json *j) {
     }
     j->c = s.str - j->input.str;
     
+    return 0;
+}
+
+json_token* json_next(json *j, json_token *root, json_token *prev) {
+    s32 r = (root)? (s32)(root - j->token) : 1;
+    s32 i = (prev)? (s32)(prev - j->token) : r;
+    
+    for (;;) {
+        i++;
+        if (i >= j->tokens) {
+            return 0;
+        }
+        s32 p = j->token[i].parent;
+        if (p < r) {
+            // reached higher node than parent in tree, no more children
+            return 0;
+        } else if (p == r) {
+            // i is next child
+            return j->token + i;
+        }
+    }
+}
+
+#define json_iter(j, root, i) json_token *i = json_next(j, root, 0); i; i = json_next(j, root, i)
+
+json_token* json_find_key(json *j, json_token *root, str key) {
+    ASSERT(!root || root->type == JSON_OBJECT);
+    for (json_iter(j, root, c)) {
+        if (c->type == JSON_KEY && str_eq(c->str, key)) {
+            return c + 1;
+        }
+    }
     return 0;
 }
 

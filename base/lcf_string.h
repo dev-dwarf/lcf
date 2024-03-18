@@ -1,8 +1,7 @@
 #if !defined(LCF_STRING)
-#define LCF_STRING "1.0.0"
+#define LCF_STRING 
 
 #include <stdarg.h>
-
 #include "lcf_types.h"
 #include "lcf_memory.h"
 
@@ -23,6 +22,8 @@ str str_from_cstring(char *cstr);
 #define strl(s) str_from((char*)s, (s64)sizeof(s)-1)
 #define strc(s) {sizeof(s)-1, (char*)s}
 global str str_EMPTY = {0, 0};
+
+str strf(Arena *a, char *fmt, ...);
 
 /* Basic/fast operations */
 str str_first(str s, s64 len); /* return first len chars of str, str[0, len) */
@@ -51,7 +52,7 @@ b32 char_is_whitespace(char c);
 b32 str_contains_char(str s, char c);
 b32 str_contains_substring(str s, str sub);
 b32 str_contains_delimiter(str s, str delims);
-#define LCF_STRING_NO_MATCH s64_MIN
+#define LCF_STRING_NO_MATCH (-1)
 s64 str_char_location(str s, char c);
 s64 str_char_location_backward(str s, char find); 
 s64 str_substring_location(str s, str sub);
@@ -70,6 +71,11 @@ str str_trim_whitespace_back(str s);
 str str_trim_last_slash(str s);
 str str_trim_file_type(str s);
 str str_get_file_type(str s);
+
+/* Parsing */
+u64 str_to_u64(str s, s32 *failure);
+s64 str_to_s64(str s, s32 *failure);
+f64 str_to_f64(str s, s32 *failure);
 
 /* Iterations */
 #define str_iter_custom(s, i, c)                           \
@@ -97,11 +103,11 @@ str str_get_file_type(str s);
 */
 
 /* WARN(lcf): These modify the src struct (not the data though). */
-str str_pop_at_first_substring(str *src, str split_by);
-str str_pop_at_first_delimiter(str *src, str delims);
-str str_pop_at_first_whitespace(str *src);
+str str_pop_first_substring(str *src, str split_by);
+str str_pop_first_delimiter(str *src, str delims);
+str str_pop_first_whitespace(str *src);
 
-#define str_iter_pop_substring_custom(s, split_by, iter)               \
+#define str_iter_substring(s, split_by, iter)               \
     for (                                                               \
         str MACRO_VAR(_str) = (s),                                     \
             MACRO_VAR(_split_by) = (split_by),                          \
@@ -111,9 +117,8 @@ str str_pop_at_first_whitespace(str *src);
             ;                                                           \
         iter = str_pop_at_first_substring(&MACRO_VAR(_str),MACRO_VAR(_split_by)) \
         )
-#define str_iter_pop_substring(s, split_by) str_iter_pop_substring_custom(s, split_by, sub)
 
-#define str_iter_pop_delimiter_custom(s, delims, iter)            \
+#define str_iter_delimiter(s, delims, iter)            \
     for (                                                               \
         str MACRO_VAR(_str) = (s),                                          \
             MACRO_VAR(_delims) = (delims),                              \
@@ -123,11 +128,11 @@ str str_pop_at_first_whitespace(str *src);
             ;                                                           \
         iter = str_pop_at_first_delimiter(&MACRO_VAR(_str),MACRO_VAR(_delims)) \
         )
-#define str_iter_pop_delimiter(s, delims) str_iter_pop_delimiter_custom(s, delims, sub)
+        
 global str str_NEWLINE = {1, "\n"};
-#define str_iter_pop_line(s) str_iter_pop_delimiter_custom(s, str_NEWLINE, line)
+#define str_iter_line(s, l) str_iter_delimiter(s, str_NEWLINE, l)
 
-#define str_iter_pop_whitespace_custom(s, iter)                    \
+#define str_iter_whitespace(s, iter)                    \
     for (                                                           \
         str MACRO_VAR(_str) = (s),                                 \
             iter = str_pop_at_first_whitespace(&MACRO_VAR(_str))   \
@@ -136,7 +141,6 @@ global str str_NEWLINE = {1, "\n"};
             ;                                                       \
         iter = str_pop_at_first_whitespace(&MACRO_VAR(_str))       \
         )
-#define str_iter_pop_whitespace(s) str_iter_pop_whitespace_custom(s, sub)
 
 /** Str Lists                       **/
 struct StrNode {
@@ -174,19 +178,6 @@ void StrList_insert(StrList *list, StrNode *prev, StrList nodes);
 StrNode* StrList_skip_node(StrList *list);
 StrList StrList_skip(StrList *list, s64 n);
 
-/* Split, Search, Replace */
-struct StrSearch {
-    str str;
-    StrNode *node;
-    s64 index;
-};
-typedef struct StrSearch StrSearch;
-StrSearch StrList_find_next(StrNode *head, str str);
-void StrList_split(Arena *a, StrList *list, StrSearch *pos);
-void StrList_split_remove(Arena *a, StrList *list, StrSearch *pos);
-StrSearch StrList_replace_next(Arena *a, StrList *list, str find, str replace);
-/* NOTE: ^ above should return the node position of what was replaced */
-
 /* Rendering */
 struct StrJoin {
     str prefix;
@@ -196,11 +187,9 @@ struct StrJoin {
 typedef struct StrJoin StrJoin;
 str StrList_join(Arena *a, StrList list, StrJoin join);
 StrList StrList_copy(Arena *a, StrList list);
-StrList StrList_reverse(Arena *a, StrList list);
 
 /** Unicode                          **/
 /* TODO(lcf) */
 
 
-/** ******************************** **/
 #endif
