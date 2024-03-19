@@ -1,5 +1,5 @@
 #if !defined(LCF_JSON)
-#define LCF_STRING "1.0.0"
+#define LCF_JSON 1
 
 #ifndef LCF_JSON_DEPTH
 #define LCF_JSON_DEPTH 64

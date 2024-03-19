@@ -1,5 +1,5 @@
 #if !defined(LCF_STRING)
-#define LCF_STRING 
+#define LCF_STRING 1
 
 #include <stdarg.h>
 #include "lcf_types.h"
