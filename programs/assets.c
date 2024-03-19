@@ -83,7 +83,16 @@ typedef struct AssetInfo {
     str file;
 } AssetInfo;
 
+typedef struct Inst {
+    u32 hash;
+    u16 slot;
+    u8 gen;
+    u8 real;
+} Inst;
+
 typedef struct Obj {
+    Inst id;
+    
     Vector2 pos;
     Vector2 origin;
     Vector2 size;
@@ -206,14 +215,26 @@ s32 CopyWorldToScene(Arena *a, Scene *scene) {
     Obj *O = G->obj + G->obj_max;
     for (; o < O; o++) {
         if (o->scene_depth == 0) {
-            memcpy(c->obj + c->objs++, o, sizeof(Obj));
-            if (c->objs == SCENE_OBJ_CHUNK_SIZE && !(o == O-1)) {
+            if (c->objs == SCENE_OBJ_CHUNK_SIZE) {
                 if (!c->next) {
                     c->next = AllocObjChunk(a);
                 }
-                c = c->next;
+                c = c->next; c->objs = 0;
                 scene->objs += SCENE_OBJ_CHUNK_SIZE;
             }
+            memcpy(c->obj + c->objs++, o, sizeof(Obj));
+        }
+    }
+
+    if (c->next) { // place now unused chunks on free list
+        SceneObjChunk *first = c->next
+        SceneObjChunk *last = first; 
+        while (last->next) {
+            last = last->next;
+        }
+        if (last) {
+            last->next = G->assets.free_obj_chunk;
+            G->assets.free_obj_chunk = first;
         }
     }
     
@@ -221,8 +242,48 @@ s32 CopyWorldToScene(Arena *a, Scene *scene) {
     return scene->objs;
 }
 
-s32 SpawnScene(AssetHandle scene_asset, Obj *parent) {
+// Finds inst in the current scene
+// Uses:
+// just hash -> find first instance of obj with hash
+// hash + slot -> find next instance of obj with hash
+// hash,slot,gen,real -> find exact instance
+Obj* InstObj(Inst *inst) {
+    ASSERT(inst->hash);
+    Obj *o = G->obj + inst->slot;
+    if (inst->real) {
+        if (!memcmp(inst, o->id, sizeof(Inst))) {
+            o = G->obj;
+        } 
+    } else {
+        o++; // Increment to skip null inst or slot
+        Obj *O = G->obj + G->obj_max;
+        while (o->id.hash != inst->hash) {
+            if (++o > O) {
+                o = G->obj;
+                break;
+            }
+        }
+    }
+    o->real = true;
+    return o;
+}
+
+Inst SpawnObj(Obj *parent, Obj *o) {
+
+}
+
+Inst SpawnScene(Obj *parent, AssetHandle scene_asset) {
+    // TODO: handle being root scene
     
+
+    s32 spawned_objects = 0;
+    for (SceneObjChunk *c = &scene->first; c; c = c->next)
+        for (s32 i = 0; i < c->objs; i++) {
+            spawned_objects += SpawnObj(c->obj + i, parent);
+        }
+    }
+
+    return 
 }
 
 struct Serdes {
