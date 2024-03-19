@@ -34,12 +34,14 @@ jsmntok_t* jsmn_key(char *json, jsmntok_t *root, s32 parent, str key) {
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 450
 
-#define MAX_ASSET_INFO 8192
+#define MAX_ASSET_LISTS 64
 #define MAX_ASSET_OBJ 2048
 #define MAX_ASSET_ASEPRITE 2048
 #define MAX_ASSET_TILESET 512
 #define MAX_ASSET_SCENE 2048
+
 #define SCENE_OBJ_CHUNK_SIZE 128
+#define ASSET_LIST_SIZE 256
 
 enum AssetTypes {
     INFO = 0,
@@ -52,22 +54,36 @@ enum AssetTypes {
     ASSET_TYPES
 };
 
+read_only s32 ASSET_MAX[ASSET_TYPES] = {
+    [ASSET_LIST] = MAX_ASSET_LISTS,
+    [ASEPRITE] = MAX_ASSET_ASEPRITE,
+    [OBJ] = MAX_ASSET_OBJ,
+    [TILESET] = MAX_ASSET_TILESET,
+    [SCENE] = MAX_ASSET_SCENE,
+};
+
 typedef struct AssetHandle {
     u32 hash;
-    u16 type;
     u16 slot;
+    u8 type;
+    u8 list;
 } AssetHandle;
 
-struct AssetInfo {
-    struct AssetInfo *next;
-    AssetHandle id;
+typedef struct AssetList {
+    struct AssetList *next;
+    AssetInfo info;
+    s32 assets;
+    s32 loaded;
+    AssetHandle first;
+} AssetList;
+
+typedef struct AssetInfo {
+    AssetHandle asset_handle;
     str name;
     str file;
-};
-typedef struct AssetInfo AssetInfo;
+} AssetInfo;
 
 typedef struct Obj {
-
     Vector2 pos;
     Vector2 origin;
     Vector2 size;
@@ -94,7 +110,7 @@ typedef struct Obj {
     s32 flip;
     // AnimationState anim;
 
-    AssetHandle asset;
+    AssetInfo info;
     AssetHandle ase; // Textures Asset
     AssetHandle scene; // Child Scene Asset
     
@@ -104,7 +120,7 @@ typedef struct Obj {
     // Handle next;
     // Handle prev;
     // Handle first_child;
-    s32 total_children; /* TODO right now only valid when initially spawning */
+    // s32 total_children; /* TODO right now only valid when initially spawning */
 
     u32 editor_hash;
     s32 editor_lister_score;
@@ -119,12 +135,12 @@ struct SceneObjChunk {
 };
 typedef struct SceneObjChunk SceneObjChunk;
 struct Scene {
-    AssetInfo *info;
-    s32 objs;
-
+    AssetInfo info;
+    
     Rectangle obj_bounds;
     // Rectangle tile_bounds;
         
+    s32 objs;
     SceneObjChunk first;
 };
 typedef struct Scene Scene;
@@ -134,7 +150,8 @@ struct _Assets {
     SceneObjChunk *free_obj_chunk;
 
     // Tables
-    AssetInfo info[MAX_ASSET_INFO]; s32 infos;
+    AssetHandle *loaded[ASSET_TYPES];
+    AssetList list[MAX_ASSET_INFO]; s32 lists;
     Obj obj[MAX_ASSET_OBJ]; s32 objs;
     Scene scene[MAX_ASSET_SCENE]; s32 scenes;
 };
@@ -151,18 +168,19 @@ struct _Global *G;
 
 Obj* AssetObj(AssetHandle *handle) {
     // TODO(lcf) this is super stupid for now
+    AssetHandle *objs = G->assets.loaded[OBJ];
     Obj* out = G->assets.obj + handle->slot;
 
     if (out->asset.hash != handle->hash) {
-        out = G->assets.obj;
+        out = objs;
         for (s32 i = 1; i < G->assets.objs; i++) {
-            if (G->assets.obj[i].asset.hash == handle->hash) {
-                out = G->assets.obj + i;
+            if (objs[i].hash == handle->hash) {
+                out = objs[i].hash;
             }
         }
     }
 
-    if (out != G->assets.obj) {
+    if (out != objs) {
         *handle = out->asset;
     }
 
@@ -180,84 +198,32 @@ SceneObjChunk* AllocObjChunk(Arena *a) {
     return out;
 }
 
-// TODO(lcf) revisit this function as a way to convert the active objects to a scene asset
-// s32 CopyCurrentSceneAsset() {
-//     Scene *scene = G->current_scene;
-//     Obj *obj = G->obj;
-//     Obj *obj_end = obj + G->obj_max;
-//     s32 scene_objs = 0;
+s32 CopyWorldToScene(Arena *a, Scene *scene) {
+    scene->objs = 0;
     
-//     SceneObjChunk *c = &scene->first; c->objs = 0;
+    SceneObjChunk *c = &scene->first; c->objs = 0;
+    Obj *o = G->obj;
+    Obj *O = G->obj + G->obj_max;
+    for (; o < O; o++) {
+        if (o->scene_depth == 0) {
+            memcpy(c->obj + c->objs++, o, sizeof(Obj));
+            if (c->objs == SCENE_OBJ_CHUNK_SIZE && !(o == O-1)) {
+                if (!c->next) {
+                    c->next = AllocObjChunk(a);
+                }
+                c = c->next;
+                scene->objs += SCENE_OBJ_CHUNK_SIZE;
+            }
+        }
+    }
     
-//     while (obj != obj_end) {
-//         if (c->objs == SCENE_OBJ_CHUNK_SIZE) {
-//             if (!c->next) {
-//                 if (G->assets.free_obj_chunk) {
-//                     c->next = G->assets.free_obj_chunk;
-//                     G->assets.free_obj_chunk = G->assets.free_obj_chunk->next;
-//                 } else {
-//                     c->next = Arena_take_zero(G->asset_memory, sizeof(SceneObjChunk));
-//                 }
-//             }
-//             c = c->next;
-//             c->objs = 0;
-//         }
-        
-//         s32 I = MIN((s32) (obj_end - obj), SCENE_OBJ_CHUNK_SIZE - c->objs);
-//         for (s32 i = 0; i < I; i++) {
-//             Obj *o = obj++;
-//             if (o->scene_depth == 0) {
-//                 memcpy(c->obj + c->objs, o, sizeof(Obj));
-//                 scene_objs++;
-//                 c->objs++;
-//             }
-//         }
-//     }
+    scene->objs += c->objs;
+    return scene->objs;
+}
 
-//     scene->objs = scene_objs;
-//     return scene_objs;
-// }
-
-char *bruh =  "{\
- 'glossary': {\
-         'title': 'example glossary',\
-		 'GlossDiv': {\
-             'title': 'S',\
-			 'GlossList': {\
-                 'GlossEntry': {\
-                     'ID': 'SGML',\
-					 'SortAs': 'SGML',\
-					 'GlossTerm': 'Standard Generalized Markup Language',\
-					 'Acronym': 'SGML',\
-					 'True': true, \
-					 'False': false, \
-					 'Null': null, \
-					 'Number': 1234,\
-					 'Hex': 0xDD,\
-					 'Float': 1.045e+3,\
-					 'HexFloat': 0x1ffp+3,\
-					 'Abbrev': 'ISO 8879:1986',\
-					 'GlossDef': {\
-                         'para': 'A meta-markup language, used to create markup languages such as DocBook.',\
-						 'GlossSeeAlso': ['GML', 'XML']\
-                     },\
-					 'GlossSee': 'markup'\
-                 }\
-             }\
-         }\
-     }\
-}";
-
-char *scene = "{\
-'x': 0, \
-'y': 0, \
-'w': 0, \
-'h': 0, \
-'objs': [ \
- 1, 2, 3, 4, 5, 6\
-], \
-\
-}";
+s32 SpawnScene(AssetHandle scene_asset, Obj *parent) {
+    
+}
 
 struct Serdes {
     Arena *temp;
