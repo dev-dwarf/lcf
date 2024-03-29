@@ -565,6 +565,12 @@ f64 str_to_f64(str s, s32 *failure) {
                         break;
                     }
                     got_frac = 1;
+                    
+                    while (zeros > 0) {
+                        mantissa *= 16;
+                        zeros--;
+                    }
+
                     exp_offset -= i-1; 
                     continue;
                 }
@@ -588,7 +594,7 @@ f64 str_to_f64(str s, s32 *failure) {
                     break;
                 }
             }
-            if (zeros > 0 && !got_frac) {
+            if (zeros > 0) {
                 exp_offset += zeros;
             }
             p.str += i; p.len -= i;
@@ -611,6 +617,12 @@ f64 str_to_f64(str s, s32 *failure) {
                         break;
                     }
                     got_frac = 1;
+                    
+                    while (zeros > 0) {
+                        mantissa *= 10;
+                        zeros--;
+                    }
+
                     exp_offset -= i-1; 
                     continue;
                 }
@@ -633,7 +645,7 @@ f64 str_to_f64(str s, s32 *failure) {
                     break;
                 }
             }
-            if (zeros > 0 && !got_frac) {
+            if (zeros > 0) {
                 exp_offset += zeros;
             }
             p.str += i; p.len -= i;
@@ -645,7 +657,7 @@ f64 str_to_f64(str s, s32 *failure) {
         return sign == -1? -0.0 : 0.0;
     }
 
-    f64 f = (f64)(sign*mantissa);
+    f64 f = sign*(f64)(mantissa);
 
     s32 exp = 0;
     char exp_delim = (is_hex)? 'p' : 'e';

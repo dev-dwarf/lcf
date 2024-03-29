@@ -1,0 +1,24 @@
+"objs": [
+{
+    "asset_hash": 0x00000001,
+    "editor_hash": 0x00000002,
+    "pos_x": 10.01,
+    "pos_y": 0.1,
+},    
+{
+    "asset_hash": 0x00000002,
+    "editor_hash": 0x00000004,
+    "pos_x": 30.0,
+    "pos_y": 32.0,
+},
+{
+    "asset_hash": 0x00000003,
+    "editor_hash": 0x00000008,
+    "pos_x": -23.0,
+    "pos_y": 54.0,
+},
+],
+"obj_bounds.x": -23.0,
+"obj_bounds.y": 10.0,
+"obj_bounds.width": 53.0,
+"obj_bounds.height": 44.0,

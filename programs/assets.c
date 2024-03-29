@@ -281,7 +281,7 @@ Inst SpawnScene(Obj *parent, Scene *scene) {
     s32 spawned_objects = 0;
     for (SceneObjChunk *c = &scene->first; c; c = c->next) {
         for (s32 i = 0; i < c->objs; i++) {
-            Inst inst = SpawnObj(c->obj + i, parent);
+            // Inst inst = SpawnObj(c->obj + i, parent);
             spawned_objects++;
         }
     }
@@ -367,7 +367,7 @@ static Color serdes_color(Serdes *serdes, str key, Color v, Color def) {
         json_token *t = json_find_key(serdes->json, serdes->parent, key);
         if (t) {
             u32 raw = str_to_u64(t->str, 0); 
-            memcpy(&v, raw, sizeof(Color));
+            memcpy(&v, &raw, sizeof(Color));
         } else {
             v = def;
         }
@@ -381,7 +381,7 @@ static void serdes_obj(Serdes *serdes, Obj *o, Obj *def) {
     o->scene.hash = serdes_u64(serdes, strl("scene_hash"), o->scene.hash, 0);
 
     if (!def) {
-        def = AssetObj(o->info.asset_handle.hash);
+        def = AssetObj(&o->info.asset_handle);
     }
     
     o->pos.x = serdes_f32(serdes, strl("pos_x"), o->pos.x, 0.0);    
@@ -441,39 +441,27 @@ int main() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "test");
     SetTargetFPS(60);
 
-    // jsmntok_t tok[256];
-    // jsmn_parser p; jsmn_init(&p);
-
-    // s32 count = jsmn_parse(&p, scene, strlen(scene), tok, 256);
-
-    // char *types[1 << 4] = {
-    //     [JSMN_OBJECT] = "(Object)",
-    //     [JSMN_ARRAY] = "(Array)",
-    //     [JSMN_STRING] = "(String)",
-    //     [JSMN_PRIMITIVE] = "(Primitive)",
-    // };
-    // for (s32 i = 0; i < count; i++) {
-    //     jsmntok_t t = tok[i];
-    //     printf("%s, %.*s\n", types[t.type], t.end - t.start, scene+t.start);
-    // }
-
-    // jsmntok_t *pt = jsmn_key(scene, tok, 0, strl("objs"));
-    // jsmntok_t t = *pt;
-    // printf("%s, %.*s\n", types[t.type], t.end - t.start, scene+t.start);
-
     Arena *a = Arena_create();
-    // json j = (json){
-        // .input = str_from_cstring(scene),
-        // .arena = a,
-    // };
-    // json_parse(&j);
-    
-    // json_token *objs = json_find_key(&j, 0, strl("objs")); // 0 is root param
-    // s32 i = 0;
-    // for (json_iter(&j, objs, obj)) {
-    //     printf("%d\n", i++);
-    // }
+    G = Arena_take(a, sizeof(*G));
 
+    str scene = os_ReadFile(a, strl("test.dd"));
+    
+    json j = (json){
+        .input = scene,
+        .arena = a,
+    };
+
+    Serdes serdes = (Serdes){
+        .temp = Arena_scratch(),
+        .perm = a,
+        .json = &j,
+    };
+    
+    json_parse(&j);
+
+    Scene *s = G->assets.scene + 0;
+    serdes_scene(&serdes, s);
+    
     while (!WindowShouldClose()) {
         BeginDrawing();
 		ClearBackground(WHITE);

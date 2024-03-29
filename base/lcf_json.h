@@ -91,8 +91,8 @@ s32 json_parse(json *j) {
             } break;
             case '}': {
                 json_token *par;
-                for (; j->p > 0; j->p--) {
-                    par = j->token + j->parent[j->p];
+                while (j->p > 0) {
+                    par = j->token + j->parent[j->p--];
                     if (par->type == JSON_OBJECT) {
                         par->str.len = s.str+1 - par->str.str;
                         break;
@@ -102,8 +102,8 @@ s32 json_parse(json *j) {
             } break;
             case ']': {
                 json_token *par;
-                for (; j->p > 0; j->p--) {
-                    par = j->token + j->parent[j->p];
+                while (j->p > 0) {
+                    par = j->token + j->parent[--j->p];
                     if (par->type == JSON_ARRAY) {
                         par->str.len = s.str+1 - par->str.str;
                         break;
@@ -121,8 +121,8 @@ s32 json_parse(json *j) {
                 if (j->p >= 0
                     && j->token[j->parent[j->p]].type != JSON_ARRAY
                     && j->token[j->parent[j->p]].type != JSON_OBJECT) {
-                    json_token *par = j->token + j->parent[j->p];
-                    par->str.len = s.str - par->str.str;
+                    // json_token *par = j->token + j->parent[j->p];
+                    // par->str.len = s.str - par->str.str;
                     j->p--;
                 }
                 s = str_skip(s, 1);
@@ -301,11 +301,10 @@ s32 json_parse(json *j) {
 }
 
 json_token* json_next(json *j, json_token *root, json_token *prev) {
-    s32 r = (root)? (s32)(root - j->token) : 1;
-    s32 i = (prev)? (s32)(prev - j->token) : r;
+    s32 r = (root)? (s32)(root - j->token) : 0;
+    s32 i = (prev)? (s32)(1 + prev - j->token) : 1+r;
     
     for (;;) {
-        i++;
         if (i >= j->tokens) {
             return 0;
         }
@@ -317,6 +316,7 @@ json_token* json_next(json *j, json_token *root, json_token *prev) {
             // i is next child
             return j->token + i;
         }
+        i++;
     }
 }
 
