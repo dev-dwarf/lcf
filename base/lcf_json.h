@@ -65,6 +65,7 @@ static s32 _json_next_tok(json *j) {
 }
 
 s32 json_parse(json *j) {
+    s32 err = 0;
     str s = str_skip(j->input, j->c);
 
     if (j->tokens == 0) {
@@ -291,13 +292,18 @@ s32 json_parse(json *j) {
                 s = str_skip(s, 1);
             } break;
             default: {
-                NOTIMPLEMENTED();
+                err = 1;
+                goto cleanup;
             } break;
         }
     }
+
+    j->parent[0] = 0;
+    j->p = 0;
+
+  cleanup:
     j->c = s.str - j->input.str;
-    
-    return 0;
+    return err;
 }
 
 json_token* json_next(json *j, json_token *root, json_token *prev) {

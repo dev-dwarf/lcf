@@ -119,8 +119,7 @@ typedef uint64_t u64;
 
 /* Floating Point */
 typedef float f32; 
-#define f32_MIN ((f32)-3.4028234664e+38)
-#define f32_MAX ((f32) 3.4028234664e+38)
+#define f32_HUGE ((f32) 3.4028234664e+38)
 #define f32_EPSILON ((f32) 5.96046448e-8)
 #define f32_TAU ((f32) 6.28318530718)
 #define f32_PI ((f32) 3.14159265359f)
