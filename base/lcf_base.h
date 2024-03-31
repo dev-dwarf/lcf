@@ -6,5 +6,6 @@
 #include "lcf_string.h"
 #include "lcf_random.h"
 #include "lcf_json.h"
+#include "lcf_math.h"
 
 #endif
