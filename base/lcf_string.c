@@ -884,20 +884,20 @@ str StrList_join(Arena *a, StrList list, StrJoin join) {
     /* Fill result */
     char *ptr = result.str;
 
-    MemoryCopy(ptr, join.prefix.str, join.prefix.len);
+    memcpy(ptr, join.prefix.str, join.prefix.len);
     ptr += join.prefix.len;
 
     StrNode *node = list.first;
     for (s64 i = 0; i < list.count; i++, node = node->next) {
-        MemoryCopy(ptr, node->str.str, node->str.len);
+        memcpy(ptr, node->str.str, node->str.len);
         ptr += node->str.len;
         if (node != list.last) {
-            MemoryCopy(ptr, join.seperator.str, join.seperator.len);
+            memcpy(ptr, join.seperator.str, join.seperator.len);
             ptr += join.seperator.len;
         }
     }
     
-    MemoryCopy(ptr, join.suffix.str, join.suffix.len);
+    memcpy(ptr, join.suffix.str, join.suffix.len);
     ptr += join.suffix.len;
 
     return result;

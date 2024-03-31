@@ -89,7 +89,6 @@
 #define DEFER_IF(condition, end) for(int ___i = 1; (condition) && ___i; ___i = 0, end)
 /** ******************************** **/
 
-
 /** Portable, Abbreviated Primitive Types  **/
 #include <stdint.h>
 
@@ -146,6 +145,6 @@ typedef u64 b64;
 /* Pointers */
 typedef intptr_t spr;
 typedef uintptr_t upr;
-    
+
 /** ******************************** **/
 #endif
