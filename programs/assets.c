@@ -92,9 +92,9 @@ typedef struct Inst {
 typedef struct Obj {
     Inst id;
     
-    Vector2 pos;
-    Vector2 origin;
-    Vector2 size;
+    Vec2 pos;
+    Vec2 origin;
+    Vec2 size;
     float angle;
     Color color;
     u64 layermask;
@@ -102,13 +102,13 @@ typedef struct Obj {
 
     b32 deactivated;
     s32 scene_depth;
-    Vector2 scale;
-    Vector2 pspeed;
-    Vector2 speed;
+    Vec2 scale;
+    Vec2 pspeed;
+    Vec2 speed;
     f32 accel_lerp;
     f32 angle_speed;
-    Vector2 shake;
-    Vector2 wave;
+    Vec2 shake;
+    Vec2 wave;
     f32 wavefreq;
     
     s32 state;
@@ -123,7 +123,7 @@ typedef struct Obj {
     AssetHandle scene; // Child Scene Asset
     
     // Handle parent;
-    Vector2 parent_pos;
+    Vec2 parent_pos;
 
     // Handle next;
     // Handle prev;
@@ -133,6 +133,15 @@ typedef struct Obj {
     u32 editor_hash;
     s32 editor_lister_score;
 } Obj;
+
+Rect ObjHitbox(Obj *e) {
+    return (Rect) {
+        .x = e->pos.x - e->origin.x,
+        .y = e->pos.y - e->origin.y,
+        .w = e->size.x,
+        .w = e->size.y
+    };
+}
 
 typedef struct SceneObjChunk {
     struct SceneObjChunk *next;
@@ -144,8 +153,8 @@ typedef struct SceneObjChunk {
 typedef struct Scene {
     AssetInfo info;
     
-    Rectangle obj_bounds;
-    // Rectangle tile_bounds;
+    Rect obj_bounds;
+    // Rect tile_bounds;
         
     s32 objs;
     SceneObjChunk first;
@@ -211,8 +220,12 @@ SceneObjChunk* AllocObjChunk(Arena *a) {
 
 s32 CopyWorldToScene(Arena *a, Scene *scene) {
     scene->objs = 0;
-    
+    scene->obj_bounds = (Rect){0, 0, 32, 32};
+
     SceneObjChunk *c = &scene->first; c->objs = 0;
+
+    Vec2 p0 = (Vec2){ f32_HUGE, f32_HUGE};
+    Vec2 p1 = (Vec2){-f32_HUGE,-f32_HUGE};
     Obj *o = G->obj;
     Obj *O = G->obj + G->obj_max;
     for (; o < O; o++) {
@@ -225,6 +238,10 @@ s32 CopyWorldToScene(Arena *a, Scene *scene) {
                 scene->objs += SCENE_OBJ_CHUNK_SIZE;
             }
             memcpy(c->obj + c->objs++, o, sizeof(Obj));
+
+            Rect r = ObjHitbox(o);
+            p0.x = MIN(p0.x, r.x); p0.y = MIN(p0.y, r.y);
+            p1.x = MAX(p1.x, r.x); p1.y = MAX(p1.y, r.y);
         }
     }
 
@@ -239,8 +256,13 @@ s32 CopyWorldToScene(Arena *a, Scene *scene) {
             G->assets.free_obj_chunk = first;
         }
     }
-    
+
     scene->objs += c->objs;
+    
+    if (scene->objs) {
+        scene->obj_bounds = RectFromPoints(p0, p1);
+    }
+    
     return scene->objs;
 }
 
@@ -312,12 +334,15 @@ static void serdes_push_parent(Serdes *serdes, json_token *p) {
 
 static void serdes_pop_parent(Serdes *serdes) {
     serdes->parent = serdes->json->parent[--serdes->json->p] + serdes->json->token;
+    if (serdes->json->p == 0) {
+        serdes->parent = 0;
+    }
 }
 
 static str serdes_str(Serdes *serdes, str key, str v, str def) {
     if (serdes->is_writing) {
         if (!str_eq(v, def)) {
-            StrList_push(serdes->temp, &serdes->strl, strf(serdes->temp, "\t:%.*s: %.*s,", key, v));
+            StrList_push(serdes->temp, &serdes->strl, strf(serdes->temp, "\t:%.*s: %.*s,\n", key, v));
         }
     } else {
         json_token *t = json_find_key(serdes->json, serdes->parent, key);
@@ -328,7 +353,7 @@ static str serdes_str(Serdes *serdes, str key, str v, str def) {
 static s64 serdes_s64(Serdes *serdes, str key, s64 v, s64 def) {
     if (serdes->is_writing) {
         if (v != def) {
-            StrList_push(serdes->temp, &serdes->strl, strf(serdes->temp, "\t%.*s: %lld,", key.len, key.str, v));
+            StrList_push(serdes->temp, &serdes->strl, strf(serdes->temp, "\t%.*s: %lld,\n", key.len, key.str, v));
         }
     } else {
         json_token *t = json_find_key(serdes->json, serdes->parent, key);
@@ -339,7 +364,7 @@ static s64 serdes_s64(Serdes *serdes, str key, s64 v, s64 def) {
 static u64 serdes_u64(Serdes *serdes, str key, u64 v, u64 def) {
     if (serdes->is_writing) {
         if (v != def) {
-            StrList_push(serdes->temp, &serdes->strl, strf(serdes->temp, "\t%.*s: 0x%08llX,", key.len, key.str, v));
+            StrList_push(serdes->temp, &serdes->strl, strf(serdes->temp, "\t%.*s: 0x%08llX,\n", key.len, key.str, v));
         }
     } else {
         json_token *t = json_find_key(serdes->json, serdes->parent, key);
@@ -350,7 +375,7 @@ static u64 serdes_u64(Serdes *serdes, str key, u64 v, u64 def) {
 static f32 serdes_f32(Serdes *serdes, str key, f32 v, f32 def) {
     if (serdes->is_writing) {
         if (v != def) {
-            StrList_push(serdes->temp, &serdes->strl, strf(serdes->temp, "\t%.*s: %f,", key.len, key.str, v));
+            StrList_push(serdes->temp, &serdes->strl, strf(serdes->temp, "\t%.*s: %f,\n", key.len, key.str, v));
         }
     } else {
         json_token *t = json_find_key(serdes->json, serdes->parent, key);
@@ -360,14 +385,83 @@ static f32 serdes_f32(Serdes *serdes, str key, f32 v, f32 def) {
 }
 static Color serdes_color(Serdes *serdes, str key, Color v, Color def) {
     if (serdes->is_writing) {
-        if (memcmp(&v, &def, sizeof(Color))) {
-            StrList_push(serdes->temp, &serdes->strl, strf(serdes->temp, "\t%.*s: 0x%08X,", key.len, key.str, v));
+        if (memcmp(&v, &def, sizeof(v))) {
+            StrList_push(serdes->temp, &serdes->strl, strf(serdes->temp, "\t%.*s: 0x%08X,\n", key.len, key.str, v));
         }
     } else {
         json_token *t = json_find_key(serdes->json, serdes->parent, key);
         if (t) {
             u32 raw = str_to_u64(t->str, 0); 
             memcpy(&v, &raw, sizeof(Color));
+        } else {
+            v = def;
+        }
+    }
+    return v;
+}
+static Vec2 serdes_Vec2(Serdes *serdes, str key, Vec2 v, Vec2 def) {
+    if (serdes->is_writing) {
+        if (memcmp(&v, &def, sizeof(v))) {
+            StrList_push(serdes->temp, &serdes->strl, strf(serdes->temp, "\t%.*s: [%f, %f],\n", key.len, key.str, v.x, v.y));
+        }
+    } else {
+        json_token *t = json_find_key(serdes->json, serdes->parent, key);
+        if (t) {
+            v.x = str_to_f64(t[1].str, 0);
+            v.y = str_to_f64(t[2].str, 0);
+        } else {
+            v = def;
+        }
+    }
+    return v;
+}
+static Vec3 serdes_Vec3(Serdes *serdes, str key, Vec3 v, Vec3 def) {
+    if (serdes->is_writing) {
+        if (memcmp(&v, &def, sizeof(v))) {
+            StrList_push(serdes->temp, &serdes->strl, strf(serdes->temp, "\t%.*s: [%f, %f, %f],\n", key.len, key.str, v.x, v.y, v.z));
+        }
+    } else {
+        json_token *t = json_find_key(serdes->json, serdes->parent, key);
+        if (t) {
+            v.x = str_to_f64(t[1].str, 0);
+            v.y = str_to_f64(t[2].str, 0);
+            v.z = str_to_f64(t[3].str, 0);
+        } else {
+            v = def;
+        }
+    }
+    return v;
+}
+static Vec4 serdes_Vec4(Serdes *serdes, str key, Vec4 v, Vec4 def) {
+    if (serdes->is_writing) {
+        if (memcmp(&v, &def, sizeof(v))) {
+            StrList_push(serdes->temp, &serdes->strl, strf(serdes->temp, "\t%.*s: [%f, %f, %f, %f],\n", key.len, key.str, v.x, v.y, v.z, v.w));
+        }
+    } else {
+        json_token *t = json_find_key(serdes->json, serdes->parent, key);
+        if (t) {
+            v.x = str_to_f64(t[1].str, 0);
+            v.y = str_to_f64(t[2].str, 0);
+            v.z = str_to_f64(t[3].str, 0);
+            v.w = str_to_f64(t[4].str, 0);
+        } else {
+            v = def;
+        }
+    }
+    return v;
+}
+static Rect serdes_Rect(Serdes *serdes, str key, Rect v, Rect def) {
+    if (serdes->is_writing) {
+        if (memcmp(&v, &def, sizeof(v))) {
+            StrList_push(serdes->temp, &serdes->strl, strf(serdes->temp, "\t%.*s: [%f, %f, %f, %f],\n", key.len, key.str, v.x, v.y, v.w, v.h));
+        }
+    } else {
+        json_token *t = json_find_key(serdes->json, serdes->parent, key);
+        if (t) {
+            v.x = str_to_f64(t[1].str, 0);
+            v.y = str_to_f64(t[2].str, 0);
+            v.w = str_to_f64(t[3].str, 0);
+            v.h = str_to_f64(t[4].str, 0);
         } else {
             v = def;
         }
@@ -383,15 +477,11 @@ static void serdes_obj(Serdes *serdes, Obj *o, Obj *def) {
     if (!def) {
         def = AssetObj(&o->info.asset_handle);
     }
-    
-    o->pos.x = serdes_f32(serdes, strl("pos_x"), o->pos.x, 0.0);    
-    o->pos.y = serdes_f32(serdes, strl("pos_y"), o->pos.y, 0.0);
-    o->size.x = serdes_f32(serdes, strl("size_x"), o->size.x, def->size.x);
-    o->size.y = serdes_f32(serdes, strl("size_y"), o->size.y, def->size.y);
-    o->origin.x = serdes_f32(serdes, strl("origin_x"), o->origin.x, 0.0);
-    o->origin.y = serdes_f32(serdes, strl("origin_y"), o->origin.y, 0.0);
-    o->scale.x = serdes_f32(serdes, strl("scale_x"), o->scale.x, def->scale.x);
-    o->scale.y = serdes_f32(serdes, strl("scale_y"), o->scale.y, def->scale.y);
+
+    o->pos = serdes_Vec2(serdes, strl("pos"), o->pos, (Vec2){0});
+    o->size = serdes_Vec2(serdes, strl("size"), o->size, (Vec2){0});
+    o->origin = serdes_Vec2(serdes, strl("origin"), o->origin, (Vec2){0});
+    o->scale = serdes_Vec2(serdes, strl("scale"), o->scale, (Vec2){0});
     o->angle = serdes_f32(serdes, strl("angle"), o->angle, 0.0);
     o->color = serdes_color(serdes, strl("color"), o->color, def->color);
     o->layermask = serdes_u64(serdes, strl("layermask"), o->layermask, def->layermask);
@@ -401,6 +491,7 @@ static void serdes_obj(Serdes *serdes, Obj *o, Obj *def) {
 static void serdes_scene(Serdes *serdes, Scene *s) { 
     if (serdes->is_writing) {
         StrList_push(serdes->temp, &serdes->strl, strl("objs: [\n"));
+
         for (SceneObjChunk *c = &s->first; c; c = c->next) {
             for (s32 i = 0; i < c->objs; i++) {
                 Obj *o = c->obj + i;
@@ -410,30 +501,36 @@ static void serdes_scene(Serdes *serdes, Scene *s) {
             }
         }
         StrList_push(serdes->temp, &serdes->strl, strl("], \n"));
-
-        serdes_f32(serdes, strl("obj_bounds.x"), s->obj_bounds.x, 0.0);
-        serdes_f32(serdes, strl("obj_bounds.y"), s->obj_bounds.y, 0.0);
-        serdes_f32(serdes, strl("obj_bounds.width"), s->obj_bounds.width, 32.0);
-        serdes_f32(serdes, strl("obj_bounds.height"), s->obj_bounds.height, 32.0);
     } else {
         SceneObjChunk *c = &s->first; c->objs = 0;
         json_token *objs = json_find_key(serdes->json, 0, strl("objs"));
     
         serdes_push_parent(serdes, objs);
         for (json_iter(serdes->json, objs, obj)) {
-            serdes_push_parent(serdes, obj);
-            serdes_obj(serdes, c->obj + c->objs++, 0);
-            serdes_pop_parent(serdes);
-        
             if (c->objs == SCENE_OBJ_CHUNK_SIZE) {
                 if (!c->next) {
                     c->next = AllocObjChunk(serdes->perm);
                 }
-                c = c->next; c->objs = 0;
+                if (c->next) {
+                    s->objs += SCENE_OBJ_CHUNK_SIZE;
+                    c->next->objs = 0;
+                }
+                c = c->next; 
             }
+            
+            serdes_push_parent(serdes, obj);
+            serdes_obj(serdes, c->obj + c->objs++, 0);
+            serdes_pop_parent(serdes);
         }
         serdes_pop_parent(serdes);
+
+        if (c) {
+            s->objs += c->objs;
+        }
     }
+
+    serdes_Rect(serdes, strl("obj_bounds"), s->obj_bounds, (Rect){0, 0, 32, 32});
+
 }
 
 int main() {

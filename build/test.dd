@@ -2,12 +2,12 @@
 {
     "asset_hash": 0x00000001,
     "editor_hash": 0x00000002,
-    "pos_x": 10.01,
-    "pos_y": 0.1,
+    "pos": [10.01, 0.1],
 },    
 {
     "asset_hash": 0x00000002,
     "editor_hash": 0x00000004,
+    
     "pos_x": 30.0,
     "pos_y": 32.0,
 },
