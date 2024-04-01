@@ -7,18 +7,14 @@
 {
     "asset_hash": 0x00000002,
     "editor_hash": 0x00000004,
-    
-    "pos_x": 30.0,
-    "pos_y": 32.0,
+
+    "pos": [30.0, 32.0],
 },
 {
     "asset_hash": 0x00000003,
     "editor_hash": 0x00000008,
-    "pos_x": -23.0,
-    "pos_y": 54.0,
+
+    "pos": [-23, 54],
 },
 ],
-"obj_bounds.x": -23.0,
-"obj_bounds.y": 10.0,
-"obj_bounds.width": 53.0,
-"obj_bounds.height": 44.0,
+"obj_bounds": [-23, 10, 53, 44],
