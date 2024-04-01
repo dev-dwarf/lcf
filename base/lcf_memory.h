@@ -85,7 +85,6 @@ Arena* Arena_create_custom(Arena params);
 })
 #endif
 void Arena_destroy(Arena *a);
-void Arena_set_alignment(Arena *a, s32 alignment);
 
 /* Take memory from the Arena */
 void* Arena_take(Arena *a, u64 size);

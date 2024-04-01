@@ -33,10 +33,6 @@ void Arena_destroy(Arena *a) {
     LCF_MEMORY_free(a, a->size);
 }
 
-void Arena_set_alignment(Arena *a, s32 alignment) {
-    a->alignment = alignment;
-}
-
 void* Arena_take_custom(Arena *a, u64 size, u32 alignment) {
     void* result = 0;
     
