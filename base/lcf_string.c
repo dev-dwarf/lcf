@@ -2,7 +2,7 @@
 #include <string.h> /* only for memset, memcpy */
 
 #define STB_SPRINTF_IMPLEMENTATION
-#include "stb_sprintf.h"
+#include "../libs/stb_sprintf.h"
 
 /** ASCII                            **/
 #define RET_STR(s,l)                           \

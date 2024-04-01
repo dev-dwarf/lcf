@@ -13,24 +13,6 @@
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "shell32.lib")
 
-#define JSMN_PARENT_LINKS
-#include "..\libs\jsmn.h"
-
-jsmntok_t* jsmn_key(char *json, jsmntok_t *root, s32 parent, str key) {
-    int children = root[parent].size;
-    for (jsmntok_t *t = root + parent+1; children > 0; t++) {
-        if (t->parent == parent) {
-            children--;
-
-            str tstr = { .str = json + t->start, .len = t->end - t->start };
-            if (str_eq(tstr, key)) {
-                return t+1;
-            }
-        }
-    }
-    return 0;
-}
-
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 450
 

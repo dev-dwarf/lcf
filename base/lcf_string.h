@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include "lcf_types.h"
 #include "lcf_memory.h"
+#include "../libs/stb_sprintf.h"
 
 /** ASCII                            **/
 struct str { 
