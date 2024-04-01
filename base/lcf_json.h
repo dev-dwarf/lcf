@@ -76,6 +76,10 @@ s32 json_parse(json *j) {
     
     while (s.len > 0) {
         ASSERT(j->p < LCF_JSON_DEPTH);
+
+        if (err) {
+            break;
+        }
     
         char c = *s.str; 
         json_token *t = j->token + j->tokens;
@@ -91,24 +95,26 @@ s32 json_parse(json *j) {
                 s = str_skip(s, 1);
             } break;
             case '}': {
-                json_token *par;
-                while (j->p > 0) {
-                    par = j->token + j->parent[j->p--];
-                    if (par->type == JSON_OBJECT) {
-                        par->str.len = s.str+1 - par->str.str;
-                        break;
+                if (j->p > 0) {
+                    json_token *par = j->token + j->parent[j->p];
+                    if (par->type != JSON_OBJECT) {
+                        err = 1;
                     }
+                    par->str.len =  s.str+1 - par->str.str;
+
+                    j->p--;
                 }
                 s = str_skip(s, 1);
             } break;
             case ']': {
-                json_token *par;
-                while (j->p > 0) {
-                    par = j->token + j->parent[--j->p];
-                    if (par->type == JSON_ARRAY) {
-                        par->str.len = s.str+1 - par->str.str;
-                        break;
+                if (j->p > 0) {
+                    json_token *par = j->token + j->parent[j->p];
+                    if (par->type != JSON_ARRAY) {
+                        err = 1;
                     }
+                    par->str.len = s.str+1 - par->str.str;
+                    
+                    j->p--;
                 }
                 s = str_skip(s, 1);
             } break;
@@ -119,12 +125,13 @@ s32 json_parse(json *j) {
             } break;
 
             case ',': {
-                if (j->p >= 0
-                    && j->token[j->parent[j->p]].type != JSON_ARRAY
-                    && j->token[j->parent[j->p]].type != JSON_OBJECT) {
-                    // json_token *par = j->token + j->parent[j->p];
-                    // par->str.len = s.str - par->str.str;
-                    j->p--;
+                if (j->p >= 0) {
+                    if (j->token[j->parent[j->p]].type == JSON_OBJECT) {
+                        err = 1;
+                    }
+                    if (j->token[j->parent[j->p]].type != JSON_ARRAY) {
+                        j->p--;
+                    }
                 }
                 s = str_skip(s, 1);
             } break;
@@ -293,15 +300,15 @@ s32 json_parse(json *j) {
             } break;
             default: {
                 err = 1;
-                goto cleanup;
             } break;
         }
     }
 
-    j->parent[0] = 0;
-    j->p = 0;
+    if (!err) {
+        j->parent[0] = 0;
+        j->p = 0;
+    }
 
-  cleanup:
     j->c = s.str - j->input.str;
     return err;
 }
