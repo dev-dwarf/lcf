@@ -22,10 +22,16 @@ internal u64 next_alignment(u8* mem, u64 offset, u64 alignment) {
 
 Arena* Arena_create_custom(Arena params) {
     ASSERT(is_power_of_2(params.commit_size));
-    ASSERT((params.size % params.commit_size) == 0); 
-    Arena* a = (Arena*) LCF_MEMORY_reserve(params.size);
-    LCF_MEMORY_commit(a, params.commit_size);
+    
+    u64 reserve_size = next_alignment(0, params.size, params.commit_size);
+    Arena* a = (Arena*) LCF_MEMORY_reserve(reserve_size);
+
+    u64 commit_pos = params.commit_pos? next_alignment(a, params.commit_pos, params.commit_size) : commit_size;
+    LCF_MEMORY_commit(a, commit_pos);
+    
     *a = params;
+    a->commit_pos = commit_pos;
+    a->size = reserve_size;
     return a;
 }
 
