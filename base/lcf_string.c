@@ -179,6 +179,18 @@ s32 char_is_whitespace(char c) {
     }
 }
 
+s32 char_is_alpha(char c) {
+    return ((unsigned)c|32) - 'a' < 26;
+}
+
+s32 char_is_num(char c) {
+    return ((unsigned)c) - '0' < 10;
+}
+
+s32 char_is_alphanum(char c) {
+    return (((unsigned)c|32) - 'a' < 26) || (((unsigned)c) - '0' < 10);
+}
+
 s32 str_contains_char(str s, char find) {
     return str_char_location(s,find) != LCF_STRING_NO_MATCH;
 }

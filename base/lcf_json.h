@@ -5,10 +5,6 @@
 #define LCF_JSON_DEPTH 64
 #endif
 
-/* TODO move json stuff out of base, maybe have an "extras" folder */
-/* TODO clean up files, remove .c files. */
-/* TODO especially clean up strings, remove unused shit */
-/* TODO remove b32 and weird macros */
 /* TODO add convenience json functions for querying for keys and parsing numbers */
 
 enum JSON_TYPES {
@@ -45,6 +41,7 @@ struct json {
     s64 c; // cursor
     s32 tokens;
     s32 line;
+    s32 err;
 
     // parent stack
     s32 p;
@@ -65,7 +62,6 @@ static s32 _json_next_tok(json *j) {
 }
 
 s32 json_parse(json *j) {
-    s32 err = 0;
     str s = str_skip(j->input, j->c);
 
     if (j->tokens == 0) {
@@ -77,7 +73,7 @@ s32 json_parse(json *j) {
     while (s.len > 0) {
         ASSERT(j->p < LCF_JSON_DEPTH);
 
-        if (err) {
+        if (j->err) {
             break;
         }
     
@@ -98,7 +94,7 @@ s32 json_parse(json *j) {
                 if (j->p > 0) {
                     json_token *par = j->token + j->parent[j->p];
                     if (par->type != JSON_OBJECT) {
-                        err = 1;
+                        j->err = 1;
                     }
                     par->str.len =  s.str+1 - par->str.str;
 
@@ -110,7 +106,7 @@ s32 json_parse(json *j) {
                 if (j->p > 0) {
                     json_token *par = j->token + j->parent[j->p];
                     if (par->type != JSON_ARRAY) {
-                        err = 1;
+                        j->err = 1;
                     }
                     par->str.len = s.str+1 - par->str.str;
                     
@@ -127,7 +123,7 @@ s32 json_parse(json *j) {
             case ',': {
                 if (j->p >= 0) {
                     if (j->token[j->parent[j->p]].type == JSON_OBJECT) {
-                        err = 1;
+                        j->err = 1;
                     }
                     if (j->token[j->parent[j->p]].type != JSON_ARRAY) {
                         j->p--;
@@ -257,36 +253,6 @@ s32 json_parse(json *j) {
                 _json_next_tok(j);
             } break;
 
-            /* Bool */
-            case 't': {
-                t->type = JSON_BOOL;
-                t->n = 1;
-                t->str = str_first(s, 4);
-                t->line = j->line;
-                s = str_skip(s, 4);
-                _json_next_tok(j);
-                continue;
-            } break;
-            case 'f': {
-                t->type = JSON_BOOL;
-                t->n = 0;
-                t->str = str_first(s, 5);
-                t->line = j->line;
-                s = str_skip(s, 5);
-                _json_next_tok(j);
-            } break;
-
-            /* Null */
-            case 'n': {
-                t->type = JSON_NULL;
-                t->n = 0;
-                t->str = str_first(s, 4);
-                t->line = j->line;
-                s = str_skip(s, 4);
-                _json_next_tok(j);
-                continue;
-            } break;
-            
             /* Whitespace */
             case '\n':
                 j->line++;
@@ -299,18 +265,57 @@ s32 json_parse(json *j) {
                 s = str_skip(s, 1);
             } break;
             default: {
-                err = 1;
+                if (str_has_prefix(s, strl("true"))) {
+                    t->type = JSON_BOOL;
+                    t->n = 1;
+                    t->str = str_first(s, 4);
+                    t->line = j->line;
+                    s = str_skip(s, 4);
+                    _json_next_tok(j);
+                } else if (str_has_prefix(s, strl("false"))) {
+                    t->type = JSON_BOOL;
+                    t->n = 0;
+                    t->str = str_first(s, 5);
+                    t->line = j->line;
+                    s = str_skip(s, 5);
+                    _json_next_tok(j);
+                } else if (str_has_prefix(s, strl("null"))) {
+                    t->type = JSON_NULL;
+                    t->n = 0;
+                    t->str = str_first(s, 4);
+                    t->line = j->line;
+                    s = str_skip(s, 4);
+                    _json_next_tok(j);
+                } else if (char_is_alphanum(c)) {
+                    t->n = 0;
+                    if (j->token[j->parent[j->p]].type == JSON_KEY) {
+                        t->type = JSON_STRING;
+                        s64 loc = str_char_location(s, ',');
+                        loc = (loc != LCF_STRING_NO_MATCH)? loc : s.len;
+                        t->str = str_trim_whitespace_back(str_first(s, loc));
+                        s = str_skip(s, loc);
+                    } else {
+                        t->type = JSON_KEY;
+                        s64 loc = str_char_location(s, ':');
+                        loc = (loc != LCF_STRING_NO_MATCH)? loc : s.len;
+                        t->str = str_trim_whitespace_back(str_first(s, loc));
+                        s = str_skip(s, loc);
+                    }
+                    _json_next_tok(j);
+                } else {
+                    j->err = 1;
+                }
             } break;
         }
     }
 
-    if (!err) {
+    if (!j->err) {
         j->parent[0] = 0;
         j->p = 0;
     }
 
     j->c = s.str - j->input.str;
-    return err;
+    return j->err;
 }
 
 json_token* json_next(json *j, json_token *root, json_token *prev) {

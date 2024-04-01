@@ -345,7 +345,8 @@ typedef struct Serdes {
     json_token *parent;
 
     s16 version;
-    s16 is_writing;
+    u8 is_writing;
+    u8 is_scene;
     s32 counter;
 } Serdes;
 
