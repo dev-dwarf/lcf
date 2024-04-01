@@ -1,3 +1,6 @@
+/* NOTE(lcf) This is a modified version of HandmadeMath, with C++ and
+    some other things I dont like removed. Also with shorter naming.
+*/
 /*
   HandmadeMath.h v2.0.0
 
