@@ -5,9 +5,11 @@ internal b32 is_power_of_2(u64 x) {
     return ((x & (x-1)) == 0);
 }
 
-internal u64 next_alignment(u64 ptr, u64 alignment) {
+internal u64 next_alignment(u8* mem, u64 offset, u64 alignment) {
     ASSERTM(is_power_of_2(alignment), "Alignments must be a power of 2.");
 
+    u64 ptr = ((upr) mem + offset);
+    
     /* Fast replacement for mod because alignment is power of 2 */
     u64 modulo = ptr & (alignment-1);
 
@@ -15,11 +17,12 @@ internal u64 next_alignment(u64 ptr, u64 alignment) {
         ptr += alignment - modulo;
     }
 
-    return ptr;
+    return ptr - (upr) mem;
 }
 
-/** Arena ********************************/
 Arena* Arena_create_custom(Arena params) {
+    ASSERT(is_power_of_2(params.commit_size));
+    ASSERT((params.size % params.commit_size) == 0); 
     Arena* a = (Arena*) LCF_MEMORY_reserve(params.size);
     LCF_MEMORY_commit(a, params.commit_size);
     *a = params;
@@ -38,21 +41,23 @@ void* Arena_take_custom(Arena *a, u64 size, u32 alignment) {
     void* result = 0;
     
     /* Align pos pointer */
-    u8 *memp = Arena_mem_start(a);
-    u64 aligned_pos = next_alignment(((upr) memp) + a->pos, alignment) - (upr) memp;
+    u8 *mem = Arena_mem_start(a);
+    u64 aligned_pos = next_alignment(mem, a->pos, alignment);
     u64 new_pos = aligned_pos + size;
 
     /* Check that there is space */
     if (new_pos < a->size) {
         /* Commit memory if needed */
-        if (new_pos > a->commited_pos) {
-            upr new_commited_pos = next_alignment(new_pos, a->commit_size);
-            b32 commit_success = LCF_MEMORY_commit(memp, new_commited_pos); 
-            ASSERT(commit_success);
-            a->commited_pos = new_commited_pos;
+        b32 in_commit_range = new_pos > a->commit_pos;
+        if (!in_commit_range) {
+            upr new_commit_pos = next_alignment(mem, a->pos, a->commit_size);
+            in_commit_range = LCF_MEMORY_commit(mem, new_commit_pos); 
+            a->commit_pos = new_commit_pos;
         }
-        result = memp + aligned_pos;
-        a->pos = new_pos;
+        if (in_commit_range) {
+            result = mem + aligned_pos;
+            a->pos = new_pos;
+        }
     }
     
     ASSERT(result); // Arena out of memory!
@@ -76,23 +81,30 @@ inline void* Arena_take_zero(Arena *a, u64 size) {
 }
 
 void Arena_reset(Arena *a, u64 pos) {
-    if (pos < a->pos) {
-        pos = MAX(pos, sizeof(Arena));
-
-        /* Decommit everything except what is needed, or one page */
-        u8 *memp = Arena_mem_start(a);
-        u64 needed_pos = (next_alignment(((upr) memp) + a->pos, a->commit_size) - ((upr) memp)) ;
-        u64 over_commited = a->commited_pos - needed_pos;
-        if (needed_pos > 0 && over_commited >= LCF_MEMORY_DECOMMIT_THRESHOLD) {
-            LCF_MEMORY_decommit(memp+needed_pos, over_commited);
-            a->commited_pos = needed_pos;
-        }
-        
-        if (LCF_MEMORY_DEBUG_CLEAR) {
+    if (LCF_MEMORY_DEBUG_CLEAR) {
+        if (pos < a->pos) {
             /* Clear memory between pos and a->pos */
-            memset(memp + pos, LCF_MEMORY_ARENA_CLEAR, a->pos - pos);
+            memset(Arena_mem_start(a) + pos, LCF_MEMORY_ARENA_CLEAR, a->pos - pos);
         }
-        a->pos = pos;
+    }
+    a->pos = pos;
+}
+
+void Arena_decommit(Arena *a, u64 needed_pos) {
+    u8 *mem = Arena_mem_start(a);
+    if (!needed_pos) {
+        /* Decommit everything except what is needed, or one page */
+        needed_pos = MAX(a->pos, a->commit_size);
+    } else {
+        /* Should never decommit currently in use memory! */
+        ASSERT(needed_pos > a->pos);
+    }
+    
+    u64 new_commit_pos = next_alignment(mem, needed_pos, a->commit_size);
+    u64 over_commited = a->commit_pos - new_commit_pos;
+    if (over_commited >= a->commit_size) {
+        LCF_MEMORY_decommit(mem+new_commit_pos, over_commited);
+        a->commit_pos = new_commit_pos;
     }
 }
 
@@ -152,5 +164,4 @@ ArenaSession Scratch_session_custom(Arena** conflicts, s32 n) {
     return out;
 }
 
-/** **************************************/
 #undef B_PTR

@@ -50,9 +50,6 @@
 #if !defined(LCF_MEMORY_COMMIT_SIZE)
  #define LCF_MEMORY_COMMIT_SIZE KB(4)
 #endif
-#if !defined(LCF_MEMORY_DECOMMIT_THRESHOLD)
-#define LCF_MEMORY_DECOMMIT_THRESHOLD (16*(LCF_MEMORY_COMMIT_SIZE))
-#endif 
 #if !defined(LCF_MEMORY_ALIGNMENT)
  #define LCF_MEMORY_ALIGNMENT (sizeof(void*))
 #endif
@@ -68,7 +65,7 @@
 struct Arena {
     u64 pos;
     u64 size;
-    u64 commited_pos; 
+    u64 commit_pos; 
     u64 commit_size;
     u32 alignment;
 };
