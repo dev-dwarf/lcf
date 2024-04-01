@@ -19,7 +19,7 @@ str os_ReadFile(arena *arena, str filepath) {
     return file_content;
 }
 
-b32 os_WriteFile(str filepath, StrList text) {
+s32 os_WriteFile(str filepath, StrList text) {
     u64 bytes_written = 0;
     FILE *file = fopen(filepath.str, "wb");
     if (file != 0) {
@@ -33,8 +33,8 @@ b32 os_WriteFile(str filepath, StrList text) {
         fclose(file);
     }
     return bytes_written == text.total_len;    
-xb}
-b32 os_DeleteFile(str path) {
+}
+s32 os_DeleteFile(str path) {
     s32 result = remove(path.str);
     return result == 0; /* 0 is success */
 }
@@ -44,7 +44,7 @@ b32 os_DeleteFile(str path) {
 #define SEC_USERE (1 << 6)
 #define SEC_USERALL (SEC_USERR || SEC_USERW || SEC_USERE)
 #define SEC_OTHERREAD ((1 << 2))
-b32 os_CreateDirectory(str path) {
+s32 os_CreateDirectory(str path) {
     s32 result = mkdir(path.str, SEC_USERALL || SEC_OTHERREAD);
     return result >= 0;
 }

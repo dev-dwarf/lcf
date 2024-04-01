@@ -16,8 +16,8 @@ void* os_Reserve(upr size) {
     return mmap(0, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, (off_t) 0);
 }
 
-b32 os_Commit(void *memory, upr size) {
-    b32 result = mprotect(memory, size, PROT_READ | PROT_WRITE);
+s32 os_Commit(void *memory, upr size) {
+    s32 result = mprotect(memory, size, PROT_READ | PROT_WRITE);
     return result == 0; /* NOTE(lcf) 0 is success */
 }
 

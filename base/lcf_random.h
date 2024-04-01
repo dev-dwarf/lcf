@@ -1,3 +1,6 @@
+#ifndef LCF_RANDOM
+#define LCF_RANDOM
+
 /* xoroshiro 128+
    REF: https://prng.di.unimi.it/xoroshiro128plus.c
 */
@@ -53,7 +56,7 @@ inline s32 rands32_range(RNG *r, s32 a, s32 b) {
     return (s32)(m*randf32(r)) + a;
 }
  
-inline b32 randbool(RNG *r) {
+inline s32 randbool(RNG *r) {
     u64 s = randu64(r);
     return *((s64*) &s) >= 0;
 }
@@ -109,3 +112,4 @@ inline f64 rand_normalf64(RNG *r) {
     return f*y;
 }
 
+#endif

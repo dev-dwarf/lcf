@@ -9,8 +9,8 @@
 #endif
 
 /* Generic OS Utils */
-b32 os_FileWasWritten(str filepath, u64* last_write_time) {
-    b32 result = 0;
+s32 os_FileWasWritten(str filepath, u64* last_write_time) {
+    s32 result = 0;
     
     os_FileInfo file = os_GetFileInfo(0, filepath);
     if (file.os_flags > 0) {

@@ -1,6 +1,6 @@
 #include "lcf_win32.h"
 
-global b32 win32_got_sys_info;
+global s32 win32_got_sys_info;
 global SYSTEM_INFO win32_sys_info;
 global s64 win32_PerfFreq;
 
@@ -25,7 +25,7 @@ void* os_Reserve(upr size) {
     return VirtualAlloc(0, win32_RoundUpSize(size, LCF_MEMORY_RESERVE_SIZE), MEM_RESERVE, PAGE_NOACCESS);
 }
 
-b32 os_Commit(void *memory, upr size) {
+s32 os_Commit(void *memory, upr size) {
     return !!VirtualAlloc(memory, win32_RoundUpSize(size, LCF_MEMORY_COMMIT_SIZE), MEM_COMMIT, PAGE_READWRITE);
 }
 
@@ -37,7 +37,6 @@ void os_Free(void *memory, upr size) {
     (void) size;
     VirtualFree(memory, 0, MEM_RELEASE);
 }
-
 
 str os_ReadFile(Arena *arena, str filepath) {
     str fileString = ZERO_STRUCT;
@@ -78,7 +77,7 @@ str os_ReadFile(Arena *arena, str filepath) {
     return fileString;
 }
 
-b32 os_WriteFile(str filepath, StrList text) {
+s32 os_WriteFile(str filepath, StrList text) {
     s64 bytesWrittenTotal = 0;
 
     HANDLE file;
@@ -95,8 +94,8 @@ b32 os_WriteFile(str filepath, StrList text) {
     return bytesWrittenTotal == text.total_len;
 }
 
-b32 os_DeleteFile(str path) {
-    b32 deleted;
+s32 os_DeleteFile(str path) {
+    s32 deleted;
     SCRATCH_SESSION(scratch) {
         str safe_path = str_make_cstring(scratch.arena, path);
         deleted = DeleteFile(safe_path.str);
@@ -244,9 +243,9 @@ os_FileSearch* os_BeginFileSearch(Arena *arena, str searchstr) {
     return (os_FileSearch*) fs;
 }
 
-b32 os_NextFileSearch(Arena *arena, os_FileSearch *os_fs, os_FileInfo *out_file) {
+s32 os_NextFileSearch(Arena *arena, os_FileSearch *os_fs, os_FileInfo *out_file) {
     win32_FileSearch *fs = (win32_FileSearch*) os_fs;
-    b32 has_file = 0;
+    s32 has_file = 0;
     if (fs->handle != INVALID_HANDLE_VALUE) {
         has_file = true;
         *out_file = win32_GetFileInfo(arena, fs->handle, fs->fd);

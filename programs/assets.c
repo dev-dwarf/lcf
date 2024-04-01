@@ -99,7 +99,7 @@ typedef struct Obj {
     u64 layermask;
     u64 flags;
 
-    b32 deactivated;
+    s32 deactivated;
     s32 scene_depth;
     Vec2 scale;
     Vec2 pspeed;

@@ -43,15 +43,15 @@ str str_formatv(Arena *a, char *fmt, va_list args);
 str str_format(Arena *a, char *fmt, ...);
 
 /* Comparisons / Predicates */
-#define str_is_empty(s) ((b32)((s).len == 0))
-#define str_not_empty(s) ((b32)((s).len != 0))
-b32 str_eq(str a, str b);
-b32 str_has_prefix(str s, str prefix);
-b32 str_has_suffix(str s, str suffix);
-b32 char_is_whitespace(char c);
-b32 str_contains_char(str s, char c);
-b32 str_contains_substring(str s, str sub);
-b32 str_contains_delimiter(str s, str delims);
+#define str_is_empty(s) ((s32)((s).len == 0))
+#define str_not_empty(s) ((s32)((s).len != 0))
+s32 str_eq(str a, str b);
+s32 str_has_prefix(str s, str prefix);
+s32 str_has_suffix(str s, str suffix);
+s32 char_is_whitespace(char c);
+s32 str_contains_char(str s, char c);
+s32 str_contains_substring(str s, str sub);
+s32 str_contains_delimiter(str s, str delims);
 #define LCF_STRING_NO_MATCH (-1)
 s64 str_char_location(str s, char c);
 s64 str_char_location_backward(str s, char find); 

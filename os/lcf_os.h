@@ -23,7 +23,7 @@ void os_Init() {
 /* Virtual Memory */
 u64 os_GetPageSize();
 void* os_Reserve(upr size);
-b32 os_Commit(void *memory, upr size);
+s32 os_Commit(void *memory, upr size);
 void os_Decommit(void *memory, upr size);
 void os_Free(void *memory, upr size);
 
@@ -50,11 +50,11 @@ struct os_FileInfo {
 };
 typedef struct os_FileInfo os_FileInfo;
 str os_ReadFile(Arena *arena, str filepath);
-b32 os_WriteFile(str filepath, StrList text);
-b32 os_DeleteFile(str path);
-b32 os_CreateDirectory(str path);
+s32 os_WriteFile(str filepath, StrList text);
+s32 os_DeleteFile(str path);
+s32 os_CreateDirectory(str path);
 os_FileInfo os_GetFileInfo(Arena *arena, str filepath);
-b32 os_FileWasWritten(str filepath, u64* last_write_time);
+s32 os_FileWasWritten(str filepath, u64* last_write_time);
 
 /* TODO: file searching/iters */
 /* for windows reference site.cpp */
@@ -65,7 +65,7 @@ struct os_FileSearch {
 };
 typedef struct os_FileSearch os_FileSearch;
 os_FileSearch* os_BeginFileSearch(Arena *arena, str searchstr);
-b32 os_NextFileSearch(Arena *arena, os_FileSearch *search, os_FileInfo *out_file);
+s32 os_NextFileSearch(Arena *arena, os_FileSearch *search, os_FileInfo *out_file);
 void os_EndFileSearch(os_FileSearch *search);
 #define os_FileSearchIterCustom(arena, searchstr, filesym)              \
     os_FileSearch *os_fs##__LINE__ = os_BeginFileSearch(arena, searchstr);         \

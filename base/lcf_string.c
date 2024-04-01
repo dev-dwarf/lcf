@@ -148,25 +148,25 @@ str strf(Arena *a, char *fmt, ...) {
 
 
 /* Comparisons / Predicates */
-b32 str_eq(str a, str b) {
+s32 str_eq(str a, str b) {
     return (a.len == b.len) &&
         ((str_is_empty(a))
          || (memcmp(a.str, b.str, a.len) == 0));
 }
 
-b32 str_has_prefix(str s, str prefix) {
+s32 str_has_prefix(str s, str prefix) {
     return (prefix.len <= s.len) &&
         (str_not_empty(s)) &&
         (memcmp(s.str, prefix.str, prefix.len) == 0);
 }
 
-b32 str_has_suffix(str s, str suffix) {
+s32 str_has_suffix(str s, str suffix) {
     return (suffix.len <= s.len) &&
         (str_not_empty(s)) && 
         (memcmp(s.str+(s.len-suffix.len), suffix.str, suffix.len) == 0);
 }
 
-b32 char_is_whitespace(char c) {
+s32 char_is_whitespace(char c) {
     switch (c) {
     case ' ':
     case '\n':
@@ -179,7 +179,7 @@ b32 char_is_whitespace(char c) {
     }
 }
 
-b32 str_contains_char(str s, char find) {
+s32 str_contains_char(str s, char find) {
     return str_char_location(s,find) != LCF_STRING_NO_MATCH;
 }
 s64 str_char_location(str s, char find) {
@@ -210,7 +210,7 @@ s64 str_first_whitespace_location(str s) {
     return LCF_STRING_NO_MATCH;
 }
 
-b32 str_contains_substring(str s, str sub) {
+s32 str_contains_substring(str s, str sub) {
     return str_substring_location(s,sub) != LCF_STRING_NO_MATCH;
 }
 s64 str_substring_location(str s, str sub) {
@@ -233,7 +233,7 @@ s64 str_substring_location(str s, str sub) {
 
 /* NOTE(lcf): similar to substring functions, but delims is used as a list of chars to
    look for instead of matching the entire substring. */
-b32 str_contains_delimiter(str s, str delims) {
+s32 str_contains_delimiter(str s, str delims) {
     return str_delimiter_location(s, delims) != LCF_STRING_NO_MATCH;
 }
 s64 str_delimiter_location(str s, str delims) {
@@ -511,7 +511,7 @@ f64 str_to_f64(str s, s32 *failure) {
         }
     }
 
-    b32 is_hex = 0;
+    s32 is_hex = 0;
     if (p.str[0] == '0' && p.str[1] == 'x') { // Hex
         is_hex = 1;
         p.str += 2; p.len -= 2;
@@ -526,7 +526,7 @@ f64 str_to_f64(str s, s32 *failure) {
         p.str += i; p.len -= i;
     }
 
-    b32 got_frac = 0;
+    s32 got_frac = 0;
     s32 exp_offset = 0;
     if (*p.str == '.') { // dot before digits, eg 0.505
         got_frac = 1;
@@ -675,7 +675,7 @@ f64 str_to_f64(str s, s32 *failure) {
             p.str += 1; p.len -= 1;
         }
 
-        b32 got_digit = 0;
+        s32 got_digit = 0;
         for (i = 0; i < p.len; i++) {
             u8 digit = p.str[i] - '0';
             if (digit >= 10) {

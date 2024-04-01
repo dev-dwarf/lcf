@@ -127,20 +127,9 @@ typedef float f32;
 #define f32_EXPONENT (0x7F800000)
 #define f32_MANTISSA (0x007FFFFF)
 
-// #define IS_NAN(x) (x != x)
-
-f32 f32_abs(f32 f);
-f32 f32_sign(f32 f); /* NOTE(lcf): sign of an IEEE754 float is never 0. */
+#define IS_NAN(x) (x != x)
 
 typedef double f64; 
-f64 f64_abs(f64 f);
-f64 f64_sign(f64 f);
-
-/* Bool/Bits */
-typedef u8 b8;
-typedef u16 b16;
-typedef u32 b32;
-typedef u64 b64;
 
 /* Pointers */
 typedef intptr_t spr;
