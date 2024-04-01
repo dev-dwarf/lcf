@@ -320,7 +320,7 @@ s32 json_parse(json *j) {
 
 json_token* json_next(json *j, json_token *root, json_token *prev) {
     s32 r = (root)? (s32)(root - j->token) : 0;
-    s32 i = (prev)? (s32)(1 + prev - j->token) : 1+r;
+    s32 i = 1 + ((prev)? (s32)(prev - j->token) : r);
     
     for (;;) {
         if (i >= j->tokens) {
