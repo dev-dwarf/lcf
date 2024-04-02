@@ -1,0 +1,15 @@
+objs: [
+  {
+    editor_hash: 0x00000002,
+    pos: [1.001, 0.1],
+  },
+  {
+    editor_hash: 0x00000004,
+    pos: [30, 32],
+  },
+  {
+    editor_hash: 0x00000008,
+    pos: [-23, 54],
+  },
+],
+obj_bounds: [-23, 10, 53, 44],
