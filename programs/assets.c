@@ -548,12 +548,14 @@ static s32 serdes_Rect(Serdes *serdes, str key, Rect *v, Rect def) {
 }
 
 s32 serdes_obj(Serdes *serdes, Obj *o, Obj *def) {
-    serdes_u32(serdes, strl("obj_hash"), &o->obj.hash, 0);
-    serdes_u32(serdes, strl("editor_hash"), &o->editor_hash, 0);
+    serdes_u32(serdes, strl("obj"), &o->obj.hash, 0);
+    serdes_u32(serdes, strl("inst"), &o->editor_hash, 0);
     serdes_u32(serdes, strl("scene_hash"), &o->scene.hash, 0);
 
     if (!def) {
+        u32 hash = o->obj.hash;
         def = AssetObj(&o->obj);
+        o->obj.hash = hash;
     }
 
     serdes_Vec2(serdes, strl("pos"), &o->pos, (Vec2){0});

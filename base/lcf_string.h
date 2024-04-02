@@ -83,19 +83,15 @@ s64 str_to_s64(str s, s32 *failure);
 f64 str_to_f64(str s, s32 *failure);
 
 /* Iterations */
-#define str_iter_custom(s, i, c)                           \
+#define str_iter(s, i, c)                           \
     s64 i = 0;                                              \
     char c = s.str[i];                                      \
     for (; (i < (s64) s.len); i++, c = s.str[i])
 
-#define str_iter(s) str_iter_custom(s, i, c)
-
-#define str_iter_backward_custom(s, i, c)                  \
+#define str_iter_backward(s, i, c)                  \
     s64 i = s.len-1;                                        \
     char c = s.str[i];                                      \
     for (; (i >= 0); i--, c = s.str[i])
-
-#define str_iter_backward(s) str_iter_backward_custom(s, i, c)
 
 /* The idea of these procedures is to search the string for a search_str(substring|delimiter|whitespace),
    then return the substring before the search_str, as well as advancing src to be past the search_str.

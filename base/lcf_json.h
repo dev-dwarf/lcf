@@ -26,9 +26,9 @@ enum JSON_NUM_FLAGS {
 
 struct json_token {
     enum JSON_TYPES type;
-    s32 parent;
-    s32 line;
-    s32 n;
+    u32 parent;
+    u32 line;
+    u32 n;
     str str;
 };
 typedef struct json_token json_token;
@@ -41,7 +41,7 @@ struct json {
     s64 c; // cursor
     s32 tokens;
     s32 line;
-    s32 err;
+    s16 err;
 
     // parent stack
     s32 p;
@@ -51,9 +51,12 @@ typedef struct json json;
 
 static s32 _json_next_tok(json *j) {
     json_token *t = j->token + j->tokens;
-    if (j->p >= 0) {
-        j->token[j->parent[j->p]].n++;
-        t->parent = j->parent[j->p];
+    t->parent = j->parent[j->p];
+    if (t->type == JSON_KEY) {
+        t->n = str_hash(t->str, 0);
+    } 
+    if (j->token[t->parent].type != JSON_KEY) {
+        j->token[t->parent].n++;
     }
     s32 r = j->tokens++;
     Arena_take_struct_zero(j->arena, json_token);
@@ -309,11 +312,8 @@ s32 json_parse(json *j) {
         }
     }
 
-    if (!j->err) {
-        j->parent[0] = 0;
-        j->p = 0;
-    }
-
+    j->parent[0] = 0;
+    j->p = 0;
     j->c = s.str - j->input.str;
     return j->err;
 }
@@ -342,8 +342,9 @@ json_token* json_next(json *j, json_token *root, json_token *prev) {
 
 json_token* json_find_key(json *j, json_token *root, str key) {
     ASSERT(!root || root->type == JSON_OBJECT);
+    u32 key_hash = str_hash(key, 0);
     for (json_iter(j, root, c)) {
-        if (c->type == JSON_KEY && str_eq(c->str, key)) {
+        if (c->type == JSON_KEY && c->n == key_hash) {
             return c + 1;
         }
     }

@@ -195,7 +195,7 @@ s32 str_contains_char(str s, char find) {
     return str_char_location(s,find) != LCF_STRING_NO_MATCH;
 }
 s64 str_char_location(str s, char find) {
-    str_iter(s) {
+    str_iter(s, i, c) {
         if (c == find) {
             return i;
         }
@@ -203,7 +203,7 @@ s64 str_char_location(str s, char find) {
     return LCF_STRING_NO_MATCH;
 }
 s64 str_char_location_backward(str s, char find) {
-    str_iter_backward(s) {
+    str_iter_backward(s, i, c) {
         if (c == find) {
             return i;
         }
@@ -214,7 +214,7 @@ s64 str_first_whitespace_location(str s) {
     if (str_is_empty(s)) {
         return LCF_STRING_NO_MATCH;
     }
-    str_iter(s) {
+    str_iter(s, i, c) {
         if (char_is_whitespace(c)) {
             return i;
         }
@@ -230,7 +230,7 @@ s64 str_substring_location(str s, str sub) {
     if (str_is_empty(s) || str_is_empty(sub)) {
         return LCF_STRING_NO_MATCH;
     }
-    str_iter(s) {
+    str_iter(s, i, c) {
         if (c == sub.str[match]) {
             match++;
             if (match == sub.len) {
@@ -255,8 +255,8 @@ s64 str_delimiter_location(str s, str delims) {
     if (str_is_empty(delims)) {
         return 0;
     }
-    str_iter(s) {
-        str_iter_custom(delims, j, delim) {
+    str_iter(s, i, c) {
+        str_iter(delims, j, delim) {
             if (c == delim) {
                 return i;
             }
