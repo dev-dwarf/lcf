@@ -26,7 +26,7 @@ Arena* Arena_create_custom(Arena params) {
     u64 reserve_size = next_alignment(0, params.size, params.commit_size);
     Arena* a = (Arena*) LCF_MEMORY_reserve(reserve_size);
 
-    u64 commit_pos = params.commit_pos? next_alignment(a, params.commit_pos, params.commit_size) : commit_size;
+    u64 commit_pos = params.commit_pos? next_alignment((u8*) a, params.commit_pos, params.commit_size) : params.commit_size;
     LCF_MEMORY_commit(a, commit_pos);
     
     *a = params;

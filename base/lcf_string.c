@@ -134,7 +134,7 @@ static str strfv(Arena *a, char *fmt, va_list args) {
     va_copy(args2, args);
     result.len = stbsp_vsnprintf(0, 0, fmt, args2);
     result.str = Arena_take_array(a, char, result.len+1);
-    stbsp_vsnprintf(result.str, (s32)result.len, fmt, args);
+    stbsp_vsnprintf(result.str, (s32)result.len+1, fmt, args);
     return result;
 }
 
