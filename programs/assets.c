@@ -586,6 +586,8 @@ s32 serdes_obj(Serdes *serdes, Obj *o, Obj *def) {
     return 0;
 }
 
+
+
 s32 serdes_scene(Serdes *serdes, Scene *s) { 
     Asset *ass = SceneAsset(s);
     serdes_u32(serdes, strl("scene"), &ass->hash, -1);

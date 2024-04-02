@@ -67,12 +67,11 @@ typedef struct os_FileSearch os_FileSearch;
 os_FileSearch* os_BeginFileSearch(Arena *arena, str searchstr);
 s32 os_NextFileSearch(Arena *arena, os_FileSearch *search, os_FileInfo *out_file);
 void os_EndFileSearch(os_FileSearch *search);
-#define os_FileSearchIterCustom(arena, searchstr, filesym)              \
+#define os_FileSearchIter(arena, searchstr, file)              \
     os_FileSearch *os_fs##__LINE__ = os_BeginFileSearch(arena, searchstr);         \
     DEFER_IF(os_fs##__LINE__ != 0,  \
                os_EndFileSearch(os_fs##__LINE__))                       \
-        for (os_FileInfo filesym; os_NextFileSearch(arena, os_fs##__LINE__, &filesym); )    
-#define os_FileSearchIter(arena, searchstr) os_FileSearchIterCustom(arena, searchstr, file)    
+        for (os_FileInfo file; os_NextFileSearch(arena, os_fs##__LINE__, &file); )    
 /* Timing */
 u64 os_GetTimeMicroseconds(void);
 u64 os_GetTimeCycles(void);
