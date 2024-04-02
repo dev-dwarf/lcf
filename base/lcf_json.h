@@ -5,8 +5,6 @@
 #define LCF_JSON_DEPTH 64
 #endif
 
-/* TODO add convenience json functions for querying for keys and parsing numbers */
-
 enum JSON_TYPES {
     JSON_UNDEFINED = 0,
     JSON_OBJECT,

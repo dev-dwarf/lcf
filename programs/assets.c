@@ -1,3 +1,16 @@
+
+/* TODO
+- tiles in scenes
+- instantiate obj and scene functions
+- other types of assets, aseprite, tileset, etc
+- scan all assets from folder and load
+-- do this for aseprites, hash of file name is asset hash
+-- for objects makes more sense to store hash in asset file, for extra stability
+-- likewise for scene, dont want scene hashes to break. 
+- arbitrary json for objects? for params and such. can be hashed down super small
+-- REF: https://bitsquid.blogspot.com/2015/06/allocation-adventures-1-datacomponent.html
+ */
+
 #include "lcf/lcf.h"
 #include "lcf/lcf.c"
 
@@ -44,12 +57,12 @@ read_only s32 ASSET_MAX[ASSET_TYPES] = {
     [SCENE] = MAX_ASSET_SCENE,
 };
 
-typedef struct AssetHandle {
+typedef struct Asset {
     u32 hash;
     u16 slot;
     u8 type;
     u8 list;
-} AssetHandle;
+} Asset;
 
 typedef struct AssetInfo {
     str name;
@@ -60,7 +73,7 @@ typedef struct AssetList {
     AssetInfo info;
     s32 assets;
     s32 loaded;
-    AssetHandle *first;
+    Asset *first;
 } AssetList;
 
 typedef struct Inst {
@@ -99,9 +112,9 @@ typedef struct Obj {
     s32 flip;
     // AnimationState anim;
 
-    AssetHandle obj;
-    AssetHandle ase; // Textures Asset
-    AssetHandle scene; // Child Scene Asset
+    Asset obj;
+    Asset ase; // Textures Asset
+    Asset scene; // Child Scene Asset
     
     // Handle parent;
     Vec2 parent_pos;
@@ -126,7 +139,7 @@ Rect ObjHitbox(Obj *e) {
 
 typedef struct SceneObjChunk {
     struct SceneObjChunk *next;
-    // AssetHandle scene;
+    // Asset scene;
     s32 objs;
     Obj obj[SCENE_OBJ_CHUNK_SIZE];
 } SceneObjChunk;
@@ -147,11 +160,11 @@ struct _Assets {
     // AssetList list[MAX_ASSET_LIST]; s32 lists;
 
     // NOTE(lcf): 0 is a null obj/scene/whatever
-    AssetHandle obj_handle[MAX_ASSET_OBJ]; 
+    Asset obj_handle[MAX_ASSET_OBJ]; 
     AssetInfo obj_info[MAX_ASSET_OBJ];
     Obj obj[MAX_ASSET_OBJ]; s32 objs;
     
-    AssetHandle scene_handle[MAX_ASSET_SCENE]; 
+    Asset scene_handle[MAX_ASSET_SCENE]; 
     AssetInfo scene_info[MAX_ASSET_SCENE];
     Scene scene[MAX_ASSET_SCENE]; s32 scenes;
 };
@@ -166,7 +179,7 @@ struct _Global {
 };
 struct _Global *G;
 
-Obj* AssetObj(AssetHandle *handle) {
+Obj* AssetObj(Asset *handle) {
     // TODO(lcf) this is super stupid for now
     // Could be worth changing from arrays to hashmaps as we scale up.
     // Could also not be worth!
@@ -186,11 +199,11 @@ Obj* AssetObj(AssetHandle *handle) {
     return out;
 }
 
-AssetInfo* InfoObj(AssetHandle *handle) {
-    return G->assets.obj_info + (s32)(handle - G->assets.obj_handle);
+AssetInfo* ObjInfo(Obj *o) {
+    return G->assets.obj_info + o->obj.slot;
 }
 
-Scene* AssetScene(AssetHandle *handle) {
+Scene* AssetScene(Asset *handle) {
     Scene* out = G->assets.scene + handle->slot;
 
     if (G->assets.scene_handle[handle->slot].hash != handle->hash) {
@@ -207,8 +220,12 @@ Scene* AssetScene(AssetHandle *handle) {
     return out;
 }
 
-AssetInfo* InfoScene(AssetHandle *handle) {
-    return G->assets.scene_info + (s32)(handle - G->assets.scene_handle);
+AssetInfo* SceneInfo(Scene *s) {
+    return G->assets.scene_info + (s32)(s - G->assets.scene);
+}
+
+Asset* SceneAsset(Scene *s) {
+    return G->assets.scene_handle + (s32)(s - G->assets.scene);
 }
 
 SceneObjChunk* AllocObjChunk(Arena *a) {
@@ -382,14 +399,14 @@ static void serdes_pop_parent(Serdes *serdes) {
 
 static void serdes_print(Serdes *serdes, str s) {
     str indent[8] = {
-        strl("\n"),
-        strl("\n  "),
-        strl("\n    "),
-        strl("\n      "),
-        strl("\n        "),
-        strl("\n          "),
-        strl("\n            "),
-        strl("\n              "),
+        strl(""),
+        strl("  "),
+        strl("    "),
+        strl("      "),
+        strl("        "),
+        strl("          "),
+        strl("            "),
+        strl("              "),
     };
     StrList_push(serdes->temp, &serdes->strl, indent[serdes->indent]);
     StrList_push(serdes->temp, &serdes->strl, s);
@@ -398,7 +415,7 @@ static void serdes_print(Serdes *serdes, str s) {
 static s32 serdes_str(Serdes *serdes, str key, str *v, str def) {
     if (serdes->is_writing) {
         if (!str_eq(*v, def)) {
-            serdes_print(serdes, strf(serdes->temp, "%.*s: %.*s,", key, *v));
+            serdes_print(serdes, strf(serdes->temp, "%.*s: %.*s,\n", key, *v));
         }
     } else {
         json_token *t = json_find_key(&serdes->json, serdes->parent, key);
@@ -409,7 +426,7 @@ static s32 serdes_str(Serdes *serdes, str key, str *v, str def) {
 static s32 serdes_s64(Serdes *serdes, str key, s64 *v, s64 def) {
     if (serdes->is_writing) {
         if (*v != def) {
-            serdes_print(serdes, strf(serdes->temp, "%.*s: %lld,", key.len, key.str, *v));
+            serdes_print(serdes, strf(serdes->temp, "%.*s: %lld,\n", key.len, key.str, *v));
         }
     } else {
         json_token *t = json_find_key(&serdes->json, serdes->parent, key);
@@ -420,7 +437,7 @@ static s32 serdes_s64(Serdes *serdes, str key, s64 *v, s64 def) {
 static s32 serdes_s32(Serdes *serdes, str key, s32 *v, s32 def) {
     if (serdes->is_writing) {
         if (*v != def) {
-            serdes_print(serdes, strf(serdes->temp, "%.*s: %d,", key.len, key.str, *v));
+            serdes_print(serdes, strf(serdes->temp, "%.*s: %d,\n", key.len, key.str, *v));
         }
     } else {
         json_token *t = json_find_key(&serdes->json, serdes->parent, key);
@@ -431,7 +448,7 @@ static s32 serdes_s32(Serdes *serdes, str key, s32 *v, s32 def) {
 static s32 serdes_u64(Serdes *serdes, str key, u64 *v, u64 def) {
     if (serdes->is_writing) {
         if (*v != def) {
-            serdes_print(serdes, strf(serdes->temp, "%.*s: 0x%08llX,", key.len, key.str, *v));
+            serdes_print(serdes, strf(serdes->temp, "%.*s: 0x%08llX,\n", key.len, key.str, *v));
         }
     } else {
         json_token *t = json_find_key(&serdes->json, serdes->parent, key);
@@ -442,7 +459,7 @@ static s32 serdes_u64(Serdes *serdes, str key, u64 *v, u64 def) {
 static s32 serdes_u32(Serdes *serdes, str key, u32 *v, u32 def) {
     if (serdes->is_writing) {
         if (*v != def) {
-            serdes_print(serdes, strf(serdes->temp, "%.*s: 0x%08X,", key.len, key.str, *v));
+            serdes_print(serdes, strf(serdes->temp, "%.*s: 0x%08X,\n", key.len, key.str, *v));
         }
     } else {
         json_token *t = json_find_key(&serdes->json, serdes->parent, key);
@@ -453,7 +470,7 @@ static s32 serdes_u32(Serdes *serdes, str key, u32 *v, u32 def) {
 static s32 serdes_f32(Serdes *serdes, str key, f32 *v, f32 def) {
     if (serdes->is_writing) {
         if (*v != def) {
-            serdes_print(serdes, strf(serdes->temp, "%.*s: %g,", key.len, key.str, *v));
+            serdes_print(serdes, strf(serdes->temp, "%.*s: %g,\n", key.len, key.str, *v));
         }
     } else {
         json_token *t = json_find_key(&serdes->json, serdes->parent, key);
@@ -464,7 +481,7 @@ static s32 serdes_f32(Serdes *serdes, str key, f32 *v, f32 def) {
 static s32 serdes_color(Serdes *serdes, str key, Color *v, Color def) {
     if (serdes->is_writing) {
         if (memcmp(v, &def, sizeof(*v))) {
-            serdes_print(serdes, strf(serdes->temp, "%.*s: 0x%08X,", key.len, key.str, *v));
+            serdes_print(serdes, strf(serdes->temp, "%.*s: 0x%08X,\n", key.len, key.str, *v));
         }
     } else {
         json_token *t = json_find_key(&serdes->json, serdes->parent, key);
@@ -480,7 +497,7 @@ static s32 serdes_color(Serdes *serdes, str key, Color *v, Color def) {
 static s32 serdes_Vec2(Serdes *serdes, str key, Vec2 *v, Vec2 def) {
     if (serdes->is_writing) {
         if (memcmp(v, &def, sizeof(*v))) {
-            serdes_print(serdes, strf(serdes->temp, "%.*s: [%g, %g],", key.len, key.str, v->x, v->y));
+            serdes_print(serdes, strf(serdes->temp, "%.*s: [%g, %g],\n", key.len, key.str, v->x, v->y));
         }
     } else {
         json_token *t = json_find_key(&serdes->json, serdes->parent, key);
@@ -496,7 +513,7 @@ static s32 serdes_Vec2(Serdes *serdes, str key, Vec2 *v, Vec2 def) {
 static s32 serdes_Vec3(Serdes *serdes, str key, Vec3 *v, Vec3 def) {
     if (serdes->is_writing) {
         if (memcmp(v, &def, sizeof(*v))) {
-            serdes_print(serdes, strf(serdes->temp, "%.*s: [%g, %g, %g],", key.len, key.str, v->x, v->y, v->z));
+            serdes_print(serdes, strf(serdes->temp, "%.*s: [%g, %g, %g],\n", key.len, key.str, v->x, v->y, v->z));
         }
     } else {
         json_token *t = json_find_key(&serdes->json, serdes->parent, key);
@@ -513,7 +530,7 @@ static s32 serdes_Vec3(Serdes *serdes, str key, Vec3 *v, Vec3 def) {
 static s32 serdes_Vec4(Serdes *serdes, str key, Vec4 *v, Vec4 def) {
     if (serdes->is_writing) {
         if (memcmp(v, &def, sizeof(*v))) {
-            serdes_print(serdes, strf(serdes->temp, "%.*s: [%g, %g, %g, %g],", key.len, key.str, v->x, v->y, v->z, v->w));
+            serdes_print(serdes, strf(serdes->temp, "%.*s: [%g, %g, %g, %g],\n", key.len, key.str, v->x, v->y, v->z, v->w));
         }
     } else {
         json_token *t = json_find_key(&serdes->json, serdes->parent, key);
@@ -531,7 +548,7 @@ static s32 serdes_Vec4(Serdes *serdes, str key, Vec4 *v, Vec4 def) {
 static s32 serdes_Rect(Serdes *serdes, str key, Rect *v, Rect def) {
     if (serdes->is_writing) {
         if (memcmp(v, &def, sizeof(*v))) {
-            serdes_print(serdes, strf(serdes->temp, "%.*s: [%g, %g, %g, %g],", key.len, key.str, v->x, v->y, v->w, v->h));
+            serdes_print(serdes, strf(serdes->temp, "%.*s: [%g, %g, %g, %g],\n", key.len, key.str, v->x, v->y, v->w, v->h));
         }
     } else {
         json_token *t = json_find_key(&serdes->json, serdes->parent, key);
@@ -570,21 +587,22 @@ s32 serdes_obj(Serdes *serdes, Obj *o, Obj *def) {
 }
 
 s32 serdes_scene(Serdes *serdes, Scene *s) { 
+    Asset *ass = SceneAsset(s);
+    serdes_u32(serdes, strl("scene"), &ass->hash, -1);
+
     if (serdes->is_writing) {
-        StrList_push(serdes->temp, &serdes->strl, strl("objs: [")); 
-        serdes->indent++;
+        serdes_print(serdes, strl("objs: [\n")); 
         for (SceneObjChunk *c = &s->first; c; c = c->next) {
             for (s32 i = 0; i < c->objs; i++) {
                 Obj *o = c->obj + i;
-                serdes_print(serdes, strl("{"));  
+                serdes_print(serdes, strl("{\n"));  
                 serdes->indent++;
                 serdes_obj(serdes, o, 0);
                 serdes->indent--;
-                serdes_print(serdes, strl("},")); 
+                serdes_print(serdes, strl("},\n")); 
             }
         }
-        serdes->indent--;
-        serdes_print(serdes, strl("],"));
+        serdes_print(serdes, strl("],\n"));
     } else {
         SceneObjChunk *c = &s->first; c->objs = 0;
         json_token *objs = json_find_key(&serdes->json, 0, strl("objs"));
@@ -639,15 +657,15 @@ int main() {
         ser_end(ser, strl("test_ser.dd"));
     }
     
-    while (!WindowShouldClose()) {
-        BeginDrawing();
-		ClearBackground(WHITE);
+  //   while (!WindowShouldClose()) {
+  //       BeginDrawing();
+		// ClearBackground(WHITE);
 		
-        /* Draw Here */
+  //       /* Draw Here */
 
-        DrawFPS(16, 16);
-        EndDrawing();
-    }
+  //       DrawFPS(16, 16);
+  //       EndDrawing();
+  //   }
 	
     CloseWindow(); 
     return 0;
