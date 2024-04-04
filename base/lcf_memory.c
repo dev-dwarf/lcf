@@ -48,12 +48,13 @@ void* Arena_take_custom(Arena *a, u64 size, u32 alignment) {
     u64 new_pos = aligned_pos + size;
 
     /* Check that there is space */
-    if (new_pos < a->size - sizeof(Arena)) {
+    u64 real_pos = new_pos + sizeof(Arena);
+    if (real_pos < a->size)) {
         /* Commit memory if needed */
-        s32 in_commit_range = new_pos <= a->commit_pos;
+        s32 in_commit_range = real_pos <= a->commit_pos;
         if (!in_commit_range) {
-            upr new_commit_pos = next_alignment(mem, new_pos, a->commit_size);
-            in_commit_range = LCF_MEMORY_commit(mem, new_commit_pos); 
+            upr new_commit_pos = next_alignment((u8*) a, real_pos, a->commit_size);
+            in_commit_range = LCF_MEMORY_commit(a, new_commit_pos); 
             a->commit_pos = new_commit_pos;
         }
         if (in_commit_range) {

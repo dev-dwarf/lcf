@@ -66,7 +66,7 @@ struct Arena {
     u64 pos;
     u64 size;
     u64 commit_pos; 
-    u64 commit_size;
+    u32 commit_size;
     u32 alignment;
 };
 typedef struct Arena Arena;
