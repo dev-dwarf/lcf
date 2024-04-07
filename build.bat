@@ -1,5 +1,9 @@
-cl win32_build.c -nologo -I C:\Code\
+@echo off
 
-@pushd build
+if not exist win32_build.exe ( 
+    cl win32_build.c -nologo -I C:\Code\
+)
+
+pushd build
 ..\win32_build.exe
-@popd
+popd

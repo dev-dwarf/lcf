@@ -1,7 +1,5 @@
-
 /* TODO
 - tiles in scenes
-- instantiate obj and scene functions
 - other types of assets, aseprite, tileset, etc
 - scan all assets from folder and load
 -- do this for aseprites, hash of file name is asset hash
@@ -35,7 +33,7 @@
 #define MAX_ASSET_TILESET 64
 #define MAX_ASSET_SCENE 2048
 
-#define SCENE_OBJ_CHUNK_SIZE 32
+#define SCENE_OBJ_CHUNK_SIZE 16
 #define ASSET_LIST_SIZE 256
 
 enum AssetTypes {
@@ -84,7 +82,7 @@ typedef struct Inst {
 } Inst;
 
 typedef struct Obj {
-    Inst id;
+    Inst inst;
     
     Vec2 pos;
     Vec2 origin;
@@ -110,19 +108,18 @@ typedef struct Obj {
     s32 on_ground;
     s32 jump;
     s32 flip;
-    // AnimationState anim;
 
     Asset obj;
     Asset ase; // Textures Asset
-    Asset scene; // Child Scene Asset
-    
-    // Handle parent;
-    Vec2 parent_pos;
+    Asset scene; // if scene obj, contains child scene
 
-    // Handle next;
-    // Handle prev;
-    // Handle first_child;
-    // s32 total_children; /* TODO right now only valid when initially spawning */
+    Inst parent;
+    Vec2 parent_offset;
+
+    Inst next;
+    Inst prev;
+    Inst child;
+    s32 children;
 
     u32 editor_hash;
     s32 editor_lister_score;
@@ -156,9 +153,6 @@ struct _Assets {
     // Chunking for scenes
     SceneObjChunk *free_obj_chunk;
 
-    // Tables
-    // AssetList list[MAX_ASSET_LIST]; s32 lists;
-
     // NOTE(lcf): 0 is a null obj/scene/whatever
     Asset obj_handle[MAX_ASSET_OBJ]; 
     AssetInfo obj_info[MAX_ASSET_OBJ];
@@ -171,10 +165,14 @@ struct _Assets {
 struct _Global {
     Arena *asset_memory;
     struct _Assets assets;
-    
+
+    Arena *world_obj_memory;
     s32 obj_max;
     Obj *obj;
-    Obj *free_obj;
+    s32 slot_pos;
+    s32 objs;
+    Inst free_obj;
+    
     Scene *current_scene;
 };
 struct _Global *G;
@@ -293,43 +291,193 @@ s32 CopyWorldToScene(Arena *a, Scene *scene) {
 // hash + slot -> find next instance of obj with hash
 // hash,slot,gen,real -> find exact instance
 Obj* InstObj(Inst *inst) {
-    ASSERT(inst->hash);
+    if (!inst->hash) {
+        return G->obj;
+    }
+    
     Obj *o = G->obj + inst->slot;
     if (inst->real) {
-        if (!memcmp(inst, &o->id, sizeof(Inst))) {
+        if (!memcmp(inst, &o->inst, sizeof(*inst))) {
             o = G->obj;
         } 
     } else {
         o++; // Increment to skip null inst or slot
         Obj *O = G->obj + G->obj_max;
-        while (o->id.hash != inst->hash) {
+        while (o->inst.hash != inst->hash) {
             if (++o > O) {
                 o = G->obj;
                 break;
             }
         }
     }
-    *inst = o->id;
+    *inst = o->inst;
     return o;
 }
 
-Inst SpawnObj(Obj *parent, Obj *o) {
-    // TODO lcf
-    return (Inst){0};
+void SetSlotPos() {
+    Obj *o = G->obj + G->slot_pos;
+    while (o-- > G->obj) {
+        if (InstObj(&o->inst) > G->obj) {
+            break;
+        }
+        G->slot_pos--;
+    }
 }
 
-Inst SpawnScene(Obj *parent, Scene *scene) {
-    // TODO: handle being root scene (no parent obj)
-    
-    s32 spawned_objects = 0;
-    for (SceneObjChunk *c = &scene->first; c; c = c->next) {
-        for (s32 i = 0; i < c->objs; i++) {
-            // Inst inst = SpawnObj(c->obj + i, parent);
-            spawned_objects++;
+Inst InstScene(Scene *scene, Obj *parent);
+Inst InstObject(Obj o, Obj *parent) {
+    Inst inst = (Inst){0};
+    if (o.inst.hash) { // Find slot
+        if (G->free_obj.slot) {
+            inst = G->free_obj;
+            G->free_obj = G->obj[inst.slot].next;
+        }
+        if (inst.slot == 0 || inst.slot >= G->slot_pos) {
+            inst = G->obj[G->slot_pos++].inst;
+            G->free_obj.slot = 0;
         }
     }
 
-    return (Inst){0};
+    if (inst.slot) { // Place instance 
+        Obj *obj = G->obj + inst.slot;
+        *obj = o;
+        inst.hash = o.inst.hash;
+        inst.real = 1;
+        obj->inst = inst;
+        G->objs++;
+
+        if (parent) {
+            obj->parent = parent->inst;
+            obj->parent_offset = SubV2(o.pos, parent->pos);
+            parent->children++;
+
+            // list maintenance 
+            {
+                Obj *c;
+                Obj *n = InstObj(&parent->child);
+                do {
+                    c = n;
+                    n = InstObj(&c->next);
+                } while (n > G->obj);
+
+                if (c > G->obj) {
+                    c->next = inst;
+                    obj->prev = c->inst;
+                }
+            }
+        }
+
+        if (obj->scene.hash) {
+            obj->inst.hash = -1;
+            InstScene(AssetScene(&obj->scene), obj);
+        }
+    }
+
+    return inst;
+}
+
+void DeleteInst(Inst *inst) {
+    if (inst->slot > 0) {
+        Obj *o = G->obj + inst->slot;
+        if (!memcmp(inst, &o->inst, sizeof(*inst))) {
+            // Delete children 
+            if (o->children) {
+                Obj *c = InstObj(&o->child);
+                for (; c > G->obj; ) {
+                    c->parent = (Inst){0};
+                    c->prev = (Inst){0};
+                    Obj *next = InstObj(&c->next);
+                    DeleteInst(&c->inst);
+                    c = next;
+                }
+            }
+
+            // Maintain lists
+            Obj *prev = InstObj(&o->prev);
+            Obj *next = InstObj(&o->next);
+            if (prev > G->obj && next > G->obj) { 
+                prev->next = next->inst;
+                next->prev = prev->inst;
+            }
+            Obj *parent = InstObj(&o->parent);
+            if (parent > G->obj) {
+                parent->children--;
+                if (parent->child.slot == inst->slot) {
+                    parent->child = o->next;
+                }
+            }
+
+            // Delete
+            memset(o, 0, sizeof(*o));
+            o->inst.slot = inst->slot;
+
+            // Free list
+            Obj *free = G->obj + G->free_obj.slot;
+            free->next = o->inst;
+            G->free_obj = o->inst;
+
+            SetSlotPos();
+        }
+        
+        *inst = (Inst){0};
+    }
+}
+
+Inst InstanceScene(Scene *scene, Obj *parent) {
+    Inst scene_parent = (Inst){0};
+
+    if (scene) {
+        // Root scene
+        if (!parent) {
+            G->objs = 0;
+            G->slot_pos = 2;
+            scene_parent = (Inst) {
+                .hash = -1,
+                .slot = 1,
+                .gen = 0,
+                .real = 1,
+            };
+            parent = G->obj + 1;
+            parent->inst = scene_parent;
+        }
+
+        // grab space for all objs
+        // NOTE(lcf) this is not necessarily how many objects will be spawned, as there may be child scenes
+        s32 next_slot = G->slot_pos;
+        G->slot_pos += scene->objs;
+        G->objs += scene->objs;
+        parent->children += scene->objs;
+    
+        Obj *prev = parent;
+        s32 spawned_objects = 0;
+        for (SceneObjChunk *c = &scene->first; c; c = c->next) {
+            for (s32 i = 0; i < c->objs; i++) {
+                Obj *obj = G->obj + next_slot;
+                Inst inst = obj->inst;
+                inst.slot = next_slot;
+                inst.real = 1;
+
+                *obj = c->obj[i];
+                obj->parent = parent->inst;
+                obj->inst = inst;
+
+                if (prev == parent) {
+                    parent->child = inst;
+                    obj->prev = (Inst){0};
+                } else {
+                    prev->next = inst;
+                    obj->prev = prev->inst;
+                }
+                prev = obj;
+
+                if (inst.hash == 0xFFFFFFFF) {
+                    InstScene(AssetScene(&obj->scene), obj);
+                }
+            }
+        }
+    }
+
+    return scene_parent;
 }
 
 typedef struct Serdes {
@@ -398,7 +546,7 @@ static void serdes_pop_parent(Serdes *serdes) {
 }
 
 static void serdes_print(Serdes *serdes, str s) {
-    str indent[8] = {
+    str indent[12] = {
         strl(""),
         strl("  "),
         strl("    "),
@@ -407,6 +555,10 @@ static void serdes_print(Serdes *serdes, str s) {
         strl("          "),
         strl("            "),
         strl("              "),
+        strl("                "),
+        strl("                  "),
+        strl("                    "),
+        strl("                      "),
     };
     StrList_push(serdes->temp, &serdes->strl, indent[serdes->indent]);
     StrList_push(serdes->temp, &serdes->strl, s);
@@ -585,8 +737,6 @@ s32 serdes_obj(Serdes *serdes, Obj *o, Obj *def) {
     serdes_u64(serdes, strl("flags"), &o->flags, def->flags);
     return 0;
 }
-
-
 
 s32 serdes_scene(Serdes *serdes, Scene *s) { 
     Asset *ass = SceneAsset(s);
