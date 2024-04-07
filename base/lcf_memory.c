@@ -49,7 +49,7 @@ void* Arena_take_custom(Arena *a, u64 size, u32 alignment) {
 
     /* Check that there is space */
     u64 real_pos = new_pos + sizeof(Arena);
-    if (real_pos < a->size)) {
+    if (real_pos < a->size) {
         /* Commit memory if needed */
         s32 in_commit_range = real_pos <= a->commit_pos;
         if (!in_commit_range) {
