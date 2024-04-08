@@ -1,0 +1,5 @@
+id.hash: 0x100,
+ase: oPlayer.ase,
+origin: [8.0, 16.0],
+flags: 0x3,
+layermask: 0x3,

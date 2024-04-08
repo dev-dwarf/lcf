@@ -513,48 +513,6 @@ static inline float Clamp(float Min, float Value, float Max)
 /*
  * Vector initialization
  */
-
-static inline Vec2 V2(float X, float Y)
-{
-
-    Vec2 Result;
-    Result.x = X;
-    Result.y = Y;
-
-    return Result;
-}
-
-static inline Vec3 V3(float X, float Y, float Z)
-{
-
-    Vec3 Result;
-    Result.x = X;
-    Result.y = Y;
-    Result.z = Z;
-
-    return Result;
-}
-
-static inline Vec4 V4(float X, float Y, float Z, float W)
-{
-
-    Vec4 Result;
-
-#ifdef LCF_HMM__USE_SSE
-    Result.SSE = _mm_setr_ps(X, Y, Z, W);
-#elif defined(LCF_HMM__USE_NEON)
-    float32x4_t v = {X, Y, Z, W};
-    Result.NEON = v;
-#else
-    Result.x = X;
-    Result.y = Y;
-    Result.z = Z;
-    Result.w = W;
-#endif
-
-    return Result;
-}
-
 static inline Vec4 V4V(Vec3 Vector, float W)
 {
 
@@ -572,7 +530,6 @@ static inline Vec4 V4V(Vec3 Vector, float W)
 
     return Result;
 }
-
 
 /*
  * Binary vector operations

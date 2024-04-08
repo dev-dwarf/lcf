@@ -67,13 +67,6 @@ typedef struct AssetInfo {
     str file;
 } AssetInfo;
 
-typedef struct AssetList {
-    AssetInfo info;
-    s32 assets;
-    s32 loaded;
-    Asset *first;
-} AssetList;
-
 typedef struct Inst {
     u32 hash;
     u16 slot;
@@ -423,7 +416,7 @@ void DeleteInst(Inst *inst) {
     }
 }
 
-Inst InstanceScene(Scene *scene, Obj *parent) {
+Inst InstScene(Scene *scene, Obj *parent) {
     Inst scene_parent = (Inst){0};
 
     if (scene) {
