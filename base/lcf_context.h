@@ -1,5 +1,5 @@
 #ifndef LCF_CONTEXT
-#define LCF_CONTEXT "1.0.0"
+#define LCF_CONTEXT
 
 #if defined(_MSC_VER)
 

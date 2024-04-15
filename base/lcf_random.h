@@ -112,12 +112,4 @@ inline f64 rand_normalf64(RNG *r) {
     return f*y;
 }
 
-inline u64 str_hash(str s, u64 *h) {
-    u64 hash = h? *h : 5381;
-    str_iter(s, i, c) {
-        hash = ((hash << 5) + hash) + (unsigned)c; /* hash * 33 + c */
-    }
-    return hash;
-}
-
 #endif
