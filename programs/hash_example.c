@@ -56,16 +56,16 @@ int main() {
 #define N 512
     Table *t = Table_create(a, N);
 
-    for (s32 i = 1; i < N; i++) {
+    for (s64 i = 1; i < 4*N; i++) {
         struct val v = make(i);
         u64 h = hash(v);
-        Table_insert(t, h, i);
+        Table_insert(t, h, (void*)i);
     }
 
-    for (s32 i = N*4; i > 0; i--) {
+    for (s32 i = 4*N; i > 0; i--) {
         struct val v = make(i);
         u64 h = hash(v);
-        u64 d = Table_lookup(t, h);
+        u64 d = (u64) Table_lookup(t, h);
         
         if (i >= N) {
             ASSERT(d == 0);
