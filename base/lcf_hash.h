@@ -3,8 +3,6 @@
 
 // TODO(lcf) consider adding deletion functions, if useful
 
-
-
 struct Table {
     u32 exp;
     s32 keys;
