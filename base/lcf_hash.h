@@ -46,7 +46,7 @@ void* Table_insert(Table *t, u64 hash, void* data) {
     }
 }
 
-inline u16 _round_up_exp_pow2(u32 x) {
+inline u16 round_up_exp_pow2(u32 x) {
     // Round up to power of 2, opted for a fairly simple binary search alg.
     // REF: Hacker's Delight, pg 100
     s32 n = 32;
@@ -62,7 +62,7 @@ inline u16 _round_up_exp_pow2(u32 x) {
 }
 
 Table* Table_create(Arena *a, u32 capacity) {
-    u16 exp = _round_up_exp_pow2(capacity - 1);
+    u16 exp = round_up_exp_pow2(capacity - 1);
     Table* out = Arena_take_zero(a, sizeof(Table) + (1 << exp)*2*sizeof(u64));
     *out = (Table) {
         .exp = exp,
