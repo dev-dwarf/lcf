@@ -166,7 +166,7 @@ os_FileInfo os_GetFileInfo(Arena *arena, str filepath) {
     return result;
 }
 
-u64 os_GetTimeUtc(void) {
+u64 os_GetFileTime(void) {
     u64 out;
     GetSystemTimeAsFileTime((LPFILETIME) &out);
     return out;

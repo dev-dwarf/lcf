@@ -107,6 +107,12 @@ os_FileInfo os_GetFileInfo(Arena *arena, str filepath) {
  #define CYCLE_TIMER NOT_IMPLEMENTED()
 #endif
 
+u64 os_GetFileTime() {
+    time_t t = time(0);
+    u64 out; memcpy(&out, t, sizeof(out));
+    return out;
+}
+
 u64 os_GetTimeMicroseconds(void) {
     u64 result = 0;
 
