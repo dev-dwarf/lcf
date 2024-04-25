@@ -37,10 +37,12 @@ void* Table_insert(Table *t, u64 hash, void* data) {
     for (s32 i = hash;;) {
         i = (i + step) & mask;
         u64 *entry = (u64 *)(&t->first) + 2*i;
+        if (!entry[1]) {
+            t->keys++;
+        }
         if (!entry[1] || entry[1] == hash) {
             ((void**) entry)[0] = data;
             entry[1] = hash;
-            t->keys++;
             return entry;
         }
     }
@@ -49,6 +51,7 @@ void* Table_insert(Table *t, u64 hash, void* data) {
 inline u16 round_up_exp_pow2(u32 x) {
     // Round up to power of 2, opted for a fairly simple binary search alg.
     // REF: Hacker's Delight, pg 100
+    x = x-1;
     s32 n = 32;
     u32 y; 
     y = x >> 16; if (y > 0) {n = n - 16; x = y;}
