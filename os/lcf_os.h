@@ -73,6 +73,7 @@ void os_EndFileSearch(os_FileSearch *search);
                os_EndFileSearch(os_fs##__LINE__))                       \
         for (os_FileInfo file; os_NextFileSearch(arena, os_fs##__LINE__, &file); )    
 /* Timing */
+u64 os_GetTimeUtc(void);
 u64 os_GetTimeMicroseconds(void);
 u64 os_GetTimeCycles(void);
 

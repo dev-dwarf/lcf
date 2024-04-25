@@ -103,7 +103,7 @@ s32 os_DeleteFile(str path) {
     return deleted != 0; /* anything but 0 is success! */
 }
 
-os_FileInfo win32_GetFileInfo(Arena *arena, HANDLE filehandle, WIN32_FIND_DATA fd) {
+os_FileInfo win32_GetFileInfo(Arena *arena, HANDLE filehandle, WIN32_FIND_DATA fd, str path) {
     os_FileInfo result = ZERO_STRUCT;
     /* FILETIME struct is unsigned 64 bits.
        REF: https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-filetime
@@ -117,8 +117,10 @@ os_FileInfo win32_GetFileInfo(Arena *arena, HANDLE filehandle, WIN32_FIND_DATA f
     if (filehandle != INVALID_HANDLE_VALUE) {
         if (arena != 0) {
             result.name = str_copy(arena, str_from_cstring(fd.cFileName));
-            result.path = str_create_size(arena, MAX_PATH+1);
-            result.path.len = GetFullPathNameA(fd.cFileName, (DWORD) result.path.len, result.path.str, 0);
+
+            char full_path[MAX_PATH];
+            GetFullPathNameA(path.str, MAX_PATH, full_path, 0);
+            result.path = strf(arena, "%s\\%s", full_path, fd.cFileName);
         }
         result.bytes = ((u64)(fd.nFileSizeHigh) << 32) + fd.nFileSizeLow;
         time.ft = fd.ftLastWriteTime;
@@ -159,9 +161,15 @@ os_FileInfo os_GetFileInfo(Arena *arena, str filepath) {
     os_FileInfo result;
     WIN32_FIND_DATA fd;
     HANDLE handle = FindFirstFileA(filepath.str, &fd);
-    result = win32_GetFileInfo(arena, handle, fd);
+    result = win32_GetFileInfo(arena, handle, fd, strl("."));
     FindClose(handle);
     return result;
+}
+
+u64 os_GetTimeUtc(void) {
+    u64 out;
+    GetSystemTimeAsFileTime((LPFILETIME) &out);
+    return out;
 }
 
 
@@ -235,10 +243,13 @@ internal s64 win32_WriteBlock(HANDLE file, StrList data) {
 os_FileSearch* os_BeginFileSearch(Arena *arena, str searchstr) {
     win32_FileSearch *fs = 0; 
     searchstr = str_trim_whitespace(searchstr);
-    searchstr = str_trim_last_slash(searchstr);
     if (searchstr.len > 0) {
         fs = (win32_FileSearch*) Arena_take_struct_zero(arena, os_FileSearch);
-        fs->handle = FindFirstFileA(str_make_cstring(arena, searchstr).str, &(fs->fd));
+        str cstr = str_make_cstring(arena, searchstr);
+        fs->handle = FindFirstFileA(cstr.str, &(fs->fd));
+
+        s32 loc = str_char_location_backward(searchstr, '/');
+        fs->searchdir = str_make_cstring(arena, str_first(searchstr, loc));
     }
     return (os_FileSearch*) fs;
 }
@@ -248,7 +259,7 @@ s32 os_NextFileSearch(Arena *arena, os_FileSearch *os_fs, os_FileInfo *out_file)
     s32 has_file = 0;
     if (fs->handle != INVALID_HANDLE_VALUE) {
         has_file = true;
-        *out_file = win32_GetFileInfo(arena, fs->handle, fs->fd);
+        *out_file = win32_GetFileInfo(arena, fs->handle, fs->fd, fs->searchdir);
         if (!FindNextFile(fs->handle, &fs->fd)) {
             fs->handle = INVALID_HANDLE_VALUE;
         }

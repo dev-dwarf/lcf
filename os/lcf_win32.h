@@ -30,6 +30,7 @@ internal s64 win32_WriteBlock(HANDLE file, StrList data);
 struct win32_FileSearch {
     WIN32_FIND_DATA fd;
     HANDLE handle;
+    str searchdir;
 };
 typedef struct win32_FileSearch win32_FileSearch;
 #endif
