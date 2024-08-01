@@ -98,7 +98,8 @@ s32 os_DeleteFile(str path) {
     s32 deleted;
     SCRATCH_SESSION(scratch) {
         str safe_path = str_make_cstring(scratch.arena, path);
-        deleted = DeleteFile(safe_path.str);
+        // TODO(lcf): handle windows utf16 
+        deleted = DeleteFile((LPCWSTR) safe_path.str);
     }
     return deleted != 0; /* anything but 0 is success! */
 }
@@ -116,7 +117,8 @@ os_FileInfo win32_GetFileInfo(Arena *arena, HANDLE filehandle, WIN32_FIND_DATA f
     
     if (filehandle != INVALID_HANDLE_VALUE) {
         if (arena != 0) {
-            result.name = str_copy(arena, str_from_cstring(fd.cFileName));
+            // TODO(lcf): handle windows utf16 
+            result.name = str_copy(arena, str_from_cstring((char*) fd.cFileName));
 
             char full_path[MAX_PATH];
             GetFullPathNameA(path.str, MAX_PATH, full_path, 0);
@@ -160,7 +162,8 @@ os_FileInfo win32_GetFileInfo(Arena *arena, HANDLE filehandle, WIN32_FIND_DATA f
 os_FileInfo os_GetFileInfo(Arena *arena, str filepath) {
     os_FileInfo result;
     WIN32_FIND_DATA fd;
-    HANDLE handle = FindFirstFileA(filepath.str, &fd);
+    // WARN(lcf): is void* ok here?
+    HANDLE handle = FindFirstFileA(filepath.str, (void*) &fd);
     result = win32_GetFileInfo(arena, handle, fd, strl("."));
     FindClose(handle);
     return result;
@@ -246,7 +249,8 @@ os_FileSearch* os_BeginFileSearch(Arena *arena, str searchstr) {
     if (searchstr.len > 0) {
         fs = (win32_FileSearch*) Arena_take_struct_zero(arena, os_FileSearch);
         str cstr = str_make_cstring(arena, searchstr);
-        fs->handle = FindFirstFileA(cstr.str, &(fs->fd));
+        // WARN(lcf): is void* ok here?
+        fs->handle = FindFirstFileA(cstr.str, (void*) &(fs->fd));
 
         s32 loc = str_char_location_backward(searchstr, '/');
         fs->searchdir = str_make_cstring(arena, str_first(searchstr, loc));

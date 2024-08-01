@@ -128,7 +128,7 @@ str str_make_cstring(Arena *a, str s) {
     return cp;
 }
 
-static str strfv(Arena *a, char *fmt, va_list args) {
+str strfv(Arena *a, char *fmt, va_list args) {
     str result = ZERO_STRUCT;
     va_list args2;
     va_copy(args2, args);

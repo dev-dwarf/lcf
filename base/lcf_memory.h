@@ -72,7 +72,6 @@ struct Arena {
 typedef struct Arena Arena;
 
 /* Create and destroy Arenas */
-Arena* Arena_create(void); 
 Arena* Arena_create_custom(Arena params);
 
 #define Arena_default() Arena_create_custom((Arena){.size = LCF_MEMORY_ARENA_SIZE, .commit_size = LCF_MEMORY_COMMIT_SIZE, .alignment = LCF_MEMORY_ALIGNMENT}) 
