@@ -56,12 +56,25 @@ s32 os_CreateDirectory(str path);
 os_FileInfo os_GetFileInfo(Arena *arena, str filepath);
 s32 os_FileWasWritten(str filepath, u64* last_write_time);
 
+#if OS_WINDOWS
+ #include "lcf_win32.h"
+#elif OS_LINUX || OS_MAC
+ #include "lcf_posix.h"
+ #include "lcf_crt.h"
+#else
+ #error "No os implementation available."
+#endif
+
 /* TODO: file searching/iters */
 /* for windows reference site.cpp */
 /* for linux reference glob.h
    REF: https://chat.openai.com/share/312f3f74-4c0a-4be7-b4e0-ae846657f221 */
 struct os_FileSearch {
-    u8 data[512];
+    #if OS_WINDOWS
+        win32_FileSearch data;
+    #elif OS_LINUX || OS_MAC
+        u8 data[512];
+    #endif
 };
 typedef struct os_FileSearch os_FileSearch;
 os_FileSearch* os_BeginFileSearch(Arena *arena, str searchstr);
@@ -79,16 +92,6 @@ u64 os_GetTimeCycles(void);
 
 /* Threading */
 u64 os_GetThreadID(void);
-
-    
-#if OS_WINDOWS
- #include "lcf_win32.h"
-#elif OS_LINUX || OS_MAC
- #include "lcf_posix.h"
- #include "lcf_crt.h"
-#else
- #error "No os implementation available."
-#endif
 
 #endif /* LCF_OS */
 

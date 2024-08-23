@@ -247,10 +247,11 @@ os_FileSearch* os_BeginFileSearch(Arena *arena, str searchstr) {
     win32_FileSearch *fs = 0; 
     searchstr = str_trim_whitespace(searchstr);
     if (searchstr.len > 0) {
+        ASSERTSTATIC(sizeof(win32_FileSearch) <= sizeof(os_FileSearch), _win32_must_fit);
         fs = (win32_FileSearch*) Arena_take_struct_zero(arena, os_FileSearch);
         str cstr = str_make_cstring(arena, searchstr);
         // WARN(lcf): is void* ok here?
-        fs->handle = FindFirstFileA(cstr.str, (void*) &(fs->fd));
+        fs->handle = FindFirstFileA(cstr.str, (LPWIN32_FIND_DATAA) &(fs->fd));
 
         s32 loc = str_char_location_backward(searchstr, '/');
         fs->searchdir = str_make_cstring(arena, str_first(searchstr, loc));
@@ -263,8 +264,10 @@ s32 os_NextFileSearch(Arena *arena, os_FileSearch *os_fs, os_FileInfo *out_file)
     s32 has_file = 0;
     if (fs->handle != INVALID_HANDLE_VALUE) {
         has_file = true;
+
         *out_file = win32_GetFileInfo(arena, fs->handle, fs->fd, fs->searchdir);
-        if (!FindNextFile(fs->handle, &fs->fd)) {
+        
+        if (!FindNextFileA(fs->handle, (LPWIN32_FIND_DATAA) &fs->fd)) {
             fs->handle = INVALID_HANDLE_VALUE;
         }
     }
