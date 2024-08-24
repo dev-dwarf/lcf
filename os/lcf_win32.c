@@ -99,7 +99,7 @@ s32 os_DeleteFile(str path) {
     SCRATCH_SESSION(scratch) {
         str safe_path = str_make_cstring(scratch.arena, path);
         // TODO(lcf): handle windows utf16 
-        deleted = DeleteFile((LPCWSTR) safe_path.str);
+        deleted = DeleteFileA((LPCSTR) safe_path.str);
     }
     return deleted != 0; /* anything but 0 is success! */
 }

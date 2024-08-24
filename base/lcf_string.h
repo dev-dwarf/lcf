@@ -104,9 +104,9 @@ f64 str_to_f64(str s, s32 *failure);
 */
 
 /* WARN(lcf): These modify the src struct (not the data though). */
-str str_pop_first_substring(str *src, str split_by);
-str str_pop_first_delimiter(str *src, str delims);
-str str_pop_first_whitespace(str *src);
+str str_pop_at_first_substring(str *src, str split_by);
+str str_pop_at_first_delimiter(str *src, str delims);
+str str_pop_at_first_whitespace(str *src);
 
 #define str_iter_substring(s, split_by, iter)               \
     for (                                                               \
