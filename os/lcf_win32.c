@@ -278,7 +278,9 @@ s32 os_NextFileSearch(Arena *arena, os_FileSearch *os_fs, os_FileInfo *out_file)
 
 void os_EndFileSearch(os_FileSearch *os_fs) {
     win32_FileSearch *fs = (win32_FileSearch*) os_fs;
-    FindClose(fs->handle);
+    if (fs && fs->handle != INVALID_HANDLE_VALUE) {
+        FindClose(fs->handle);
+    }
 }
 
 

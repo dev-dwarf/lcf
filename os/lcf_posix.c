@@ -1,6 +1,7 @@
 #include "lcf_posix.h"
 
 void os_PlatformInit() {
+    Arena_thread_init_scratch();
     os_GetPageSize();
 }
 
