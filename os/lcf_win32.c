@@ -5,6 +5,7 @@ global SYSTEM_INFO win32_sys_info;
 global s64 win32_PerfFreq;
 
 void os_PlatformInit() {
+    Arena_thread_init_scratch();
     os_GetPageSize();
     QueryPerformanceFrequency((LARGE_INTEGER*) &win32_PerfFreq);
 }
@@ -268,6 +269,7 @@ s32 os_NextFileSearch(Arena *arena, os_FileSearch *os_fs, os_FileInfo *out_file)
         *out_file = win32_GetFileInfo(arena, fs->handle, fs->fd, fs->searchdir);
         
         if (!FindNextFileA(fs->handle, (LPWIN32_FIND_DATAA) &fs->fd)) {
+            FindClose(fs->handle);
             fs->handle = INVALID_HANDLE_VALUE;
         }
     }

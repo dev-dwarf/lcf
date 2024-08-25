@@ -17,14 +17,16 @@ typedef union Rect {
     f32 raw[4];
 } Rect;
 
-Rect RectFromPoints(Vec2 p0, Vec2 p1) {
+
+
+static Rect RectFromPoints(Vec2 p0, Vec2 p1) {
     Rect r;
     r.tl = p0;
     r.wh = SubV2(p1, p0);
     return r;
 }
 
-Rect RectGrow(Rect r, Vec2 p) {
+static Rect RectGrow(Rect r, Vec2 p) {
     r.x = MIN(r.x, p.x);
     r.y = MIN(r.y, p.y);
     r.x = MAX(r.w, p.x - r.x);
@@ -32,7 +34,7 @@ Rect RectGrow(Rect r, Vec2 p) {
     return r;
 }
 
-Rect RectUnion(Rect r1, Rect r2) {
+static Rect RectUnion(Rect r1, Rect r2) {
     Rect r;
     r.x = MIN(r1.x, r2.x);
     r.y = MIN(r1.y, r2.y);
@@ -41,16 +43,16 @@ Rect RectUnion(Rect r1, Rect r2) {
     return r;
 }
 
-f32 AngleDifference(f32 a, f32 b) {
+static f32 AngleDifference(f32 a, f32 b) {
     f32 d = fmod(b - a, 360);
     return fmod(2*d, 360) - d;
 }
 
-f32 AngleLerp(f32 a, f32 b, f32 t) {
+static f32 AngleLerp(f32 a, f32 b, f32 t) {
     return a + t*AngleDifference(a,b);
 }
 
-f32 Approach(f32 x, f32 y, f32 s) {
+static f32 Approach(f32 x, f32 y, f32 s) {
     if (x < y) {
         return MIN(x + s, y);
     } else {
@@ -58,14 +60,14 @@ f32 Approach(f32 x, f32 y, f32 s) {
     }
 }
 
-Vec2 ApproachV2(Vec2 a, Vec2 b, Vec2 s) {
+static Vec2 ApproachV2(Vec2 a, Vec2 b, Vec2 s) {
     return (Vec2){
         .x = Approach(a.x, b.x, s.x),
         .y = Approach(a.y, b.y, s.y),
     };
 }
 
-Vec3 ApproachV3(Vec3 a, Vec3 b, Vec3 s) {
+static Vec3 ApproachV3(Vec3 a, Vec3 b, Vec3 s) {
     return (Vec3){
         .x = Approach(a.x, b.x, s.x),
         .y = Approach(a.y, b.y, s.y),
@@ -73,7 +75,7 @@ Vec3 ApproachV3(Vec3 a, Vec3 b, Vec3 s) {
     };
 }
 
-Vec4 ApproachV4(Vec4 a, Vec4 b, Vec4 s) {
+static Vec4 ApproachV4(Vec4 a, Vec4 b, Vec4 s) {
     return (Vec4){
         .x = Approach(a.x, b.x, s.x),
         .y = Approach(a.y, b.y, s.y),
@@ -82,14 +84,14 @@ Vec4 ApproachV4(Vec4 a, Vec4 b, Vec4 s) {
     };
 }
 
-Vec2 SnapV2(Vec2 v, s32 grid) {
+static Vec2 SnapV2(Vec2 v, s32 grid) {
     return (Vec2) {
         .x = round(v.x/grid)*grid,
         .y = round(v.y/grid)*grid,
     };
 }
 
-Vec2 FloorV2(Vec2 v, s32 grid) {
+static Vec2 FloorV2(Vec2 v, s32 grid) {
     return (Vec2) {
         .x = floor(v.x/grid)*grid,
         .y = floor(v.y/grid)*grid,

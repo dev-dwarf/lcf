@@ -15,10 +15,6 @@
 
 /* Call before any other of these functions */
 void os_PlatformInit();
-void os_Init() {
-    os_PlatformInit();
-    Arena_thread_init_scratch();
-}
 
 /* Virtual Memory */
 u64 os_GetPageSize();

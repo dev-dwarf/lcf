@@ -62,7 +62,7 @@ static s32 _json_next_tok(json *j) {
     return r;
 }
 
-s32 json_parse(json *j) {
+static s32 json_parse(json *j) {
     str s = str_skip(j->input, j->c);
 
     if (j->tokens == 0) {
@@ -316,7 +316,7 @@ s32 json_parse(json *j) {
     return j->err;
 }
 
-json_token* json_next(json *j, json_token *root, json_token *prev) {
+static json_token* json_next(json *j, json_token *root, json_token *prev) {
     s32 r = (root)? (s32)(root - j->token) : 0;
     s32 i = 1 + ((prev)? (s32)(prev - j->token) : r);
     
@@ -338,7 +338,7 @@ json_token* json_next(json *j, json_token *root, json_token *prev) {
 
 #define json_iter(j, root, i) json_token *i = json_next(j, root, 0); i; i = json_next(j, root, i)
 
-json_token* json_find_key(json *j, json_token *root, str key) {
+static json_token* json_find_key(json *j, json_token *root, str key) {
     ASSERT(!root || root->type == JSON_OBJECT);
     u32 key_hash = hash_str(key, 0);
     for (json_iter(j, root, c)) {
@@ -348,5 +348,4 @@ json_token* json_find_key(json *j, json_token *root, str key) {
     }
     return 0;
 }
-
 #endif

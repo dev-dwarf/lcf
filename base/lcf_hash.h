@@ -14,7 +14,7 @@ typedef struct Table Table;
 // keys == (1 << exp)-1 otherwise Table_i will get stuck. This is done by Table_insert
 // In practice, for good performance (which is why you would use a hash table), insertion
 // should start long before, roughly when keys == (1 << (exp-1)).
-void* Table_lookup(Table *t, u64 hash) {
+static void* Table_lookup(Table *t, u64 hash) {
     // REF(lcf) https://nullprogram.com/blog/2022/08/08/
     u32 mask = ((u32)1 << t->exp) - 1;
     u32 step = (hash >> (64 - t->exp)) | 1;
@@ -27,7 +27,7 @@ void* Table_lookup(Table *t, u64 hash) {
     }
 }
 
-void* Table_insert(Table *t, u64 hash, void* data) {
+static void* Table_insert(Table *t, u64 hash, void* data) {
     if (t->keys == (1 << (t->exp)) - 1) {
         return 0;
     }
@@ -48,7 +48,7 @@ void* Table_insert(Table *t, u64 hash, void* data) {
     }
 }
 
-inline u16 round_up_exp_pow2(u32 x) {
+static inline u16 round_up_exp_pow2(u32 x) {
     // Round up to power of 2, opted for a fairly simple binary search alg.
     // REF: Hacker's Delight, pg 100
     x = x-1;
@@ -64,7 +64,7 @@ inline u16 round_up_exp_pow2(u32 x) {
     return 32 - n;
 }
 
-Table* Table_create(Arena *a, u32 capacity) {
+static Table* Table_create(Arena *a, u32 capacity) {
     u16 exp = round_up_exp_pow2(capacity - 1);
     Table* out = Arena_take_zero(a, sizeof(Table) + (1 << exp)*2*sizeof(u64));
     *out = (Table) {
@@ -74,12 +74,11 @@ Table* Table_create(Arena *a, u32 capacity) {
 }
 
 // djb2
-inline u64 hash_str(str s, u64 *h) {
+static inline u64 hash_str(str s, u64 *h) {
     u64 hash = h? *h : 5381;
     str_iter(s, i, c) {
         hash = ((hash << 5) + hash) + (unsigned)c; /* hash * 33 + c */
     }
     return hash;
 }
-
 #endif
