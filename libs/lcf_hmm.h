@@ -486,7 +486,7 @@ static inline float InvSqrtF(float Float)
  * Utility functions
  */
 
-static inline float Lerp(float A, float Time, float B)
+static inline float Lerp(float A, float B, float Time)
 {
     return (1.0f - Time) * A + Time * B;
 }
@@ -894,17 +894,17 @@ static inline Vec4 NormV4(Vec4 A)
  * Utility vector functions
  */
 
-static inline Vec2 LerpV2(Vec2 A, float Time, Vec2 B)
+static inline Vec2 LerpV2(Vec2 A, Vec2 B, float Time)
 {
     return AddV2(MulV2F(A, 1.0f - Time), MulV2F(B, Time));
 }
 
-static inline Vec3 LerpV3(Vec3 A, float Time, Vec3 B)
+static inline Vec3 LerpV3(Vec3 A, Vec3 B, float Time)
 {
     return AddV3(MulV3F(A, 1.0f - Time), MulV3F(B, Time));
 }
 
-static inline Vec4 LerpV4(Vec4 A, float Time, Vec4 B)
+static inline Vec4 LerpV4(Vec4 A, Vec4 B, float Time)
 {
     return AddV4(MulV4F(A, 1.0f - Time), MulV4F(B, Time));
 }
@@ -2008,7 +2008,7 @@ static inline Quat _MixQ(Quat Left, float MixLeft, Quat Right, float MixRight) {
     return Result;
 }
 
-static inline Quat NLerp(Quat Left, float Time, Quat Right)
+static inline Quat NLerp(Quat Left, Quat Right, float Time)
 {
     Quat Result = _MixQ(Left, 1.0f-Time, Right, Time);
     Result = NormQ(Result);
@@ -2016,7 +2016,7 @@ static inline Quat NLerp(Quat Left, float Time, Quat Right)
     return Result;
 }
 
-static inline Quat SLerp(Quat Left, float Time, Quat Right)
+static inline Quat SLerp(Quat Left, Quat Right, float Time)
 {
     Quat Result;
 
@@ -2029,7 +2029,7 @@ static inline Quat SLerp(Quat Left, float Time, Quat Right)
 
     /* NOTE(lcf): Use Normalized Linear interpolation when vectors are roughly not L.I. */
     if (Cos_Theta > 0.9995f) {
-        Result = NLerp(Left, Time, Right);
+        Result = NLerp(Left, Right, Time);
     } else {
         float Angle = ACosF(Cos_Theta);
         float MixLeft = SinF((1.0f - Time) * Angle);
