@@ -583,7 +583,7 @@ f64 str_to_f64(str s, s32 *failure) {
                         zeros--;
                     }
 
-                    exp_offset -= i-1; 
+                    exp_offset = 0; 
                     continue;
                 }
             
@@ -635,7 +635,7 @@ f64 str_to_f64(str s, s32 *failure) {
                         zeros--;
                     }
 
-                    exp_offset -= i-1; 
+                    exp_offset = 0; 
                     continue;
                 }
             

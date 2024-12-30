@@ -30,6 +30,7 @@ Arena* Arena_create_custom(Arena params) {
     LCF_MEMORY_commit(a, commit_pos);
     
     *a = params;
+    a->pos = 0;
     a->commit_pos = commit_pos;
     a->size = reserve_size;
     return a;

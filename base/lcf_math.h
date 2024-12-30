@@ -17,8 +17,6 @@ typedef union Rect {
     f32 raw[4];
 } Rect;
 
-
-
 static Rect RectFromPoints(Vec2 p0, Vec2 p1) {
     Rect r;
     r.tl = p0;
@@ -26,11 +24,20 @@ static Rect RectFromPoints(Vec2 p0, Vec2 p1) {
     return r;
 }
 
-static Rect RectGrow(Rect r, Vec2 p) {
+static Rect RectGrowP(Rect r, Vec2 p) {
     r.x = MIN(r.x, p.x);
     r.y = MIN(r.y, p.y);
-    r.x = MAX(r.w, p.x - r.x);
-    r.y = MAX(r.h, p.y - r.y);
+    r.w = MAX(r.w, p.x - r.x);
+    r.h = MAX(r.h, p.y - r.y);
+    return r;
+}
+
+static Rect RectGrow(Rect r1, Rect r2) {
+    Rect r;
+    r.x = MIN(r1.x, r2.x);
+    r.y = MIN(r1.y, r2.y);
+    r.w = MAX(r1.x+r1.w, r2.x+r2.w) - r.x;
+    r.h = MAX(r1.y+r1.h, r2.y+r2.h) - r.y;
     return r;
 }
 
@@ -46,6 +53,10 @@ static Rect RectUnion(Rect r1, Rect r2) {
 static f32 AngleDifference(f32 a, f32 b) {
     f32 d = fmod(b - a, 360);
     return fmod(2*d, 360) - d;
+}
+
+static f32 Unlerp(f32 a, f32 b, f32 m) {
+    return (m - a)/(b - a);
 }
 
 static f32 AngleLerp(f32 a, f32 b, f32 t) {
@@ -91,7 +102,7 @@ static Vec2 SnapV2(Vec2 v, s32 grid) {
     };
 }
 
-static Vec2 FloorV2(Vec2 v, s32 grid) {
+static Vec2 SnapFloorV2(Vec2 v, s32 grid) {
     return (Vec2) {
         .x = floor(v.x/grid)*grid,
         .y = floor(v.y/grid)*grid,
