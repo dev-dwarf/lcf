@@ -51,7 +51,7 @@ static s32 _json_next_tok(json *j) {
     json_token *t = j->token + j->tokens;
     t->parent = j->parent[j->p];
     if (t->type == JSON_KEY) {
-        t->n = hash_str(t->str, 0);
+        t->n = (u32) hash_str(t->str, 0);
     } 
     if (j->token[t->parent].type != JSON_KEY) {
         j->token[t->parent].n++;
@@ -340,7 +340,7 @@ static json_token* json_next(json *j, json_token *root, json_token *prev) {
 
 static json_token* json_find_key(json *j, json_token *root, str key) {
     ASSERT(!root || root->type == JSON_OBJECT);
-    u32 key_hash = hash_str(key, 0);
+    u32 key_hash = (u32) hash_str(key, 0);
     for (json_iter(j, root, c)) {
         if (c->type == JSON_KEY && c->n == key_hash) {
             return c + 1;

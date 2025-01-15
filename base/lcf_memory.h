@@ -74,7 +74,7 @@ typedef struct Arena Arena;
 /* Create and destroy Arenas */
 Arena* Arena_create_custom(Arena params);
 
-#define Arena_default() Arena_create_custom((Arena){.size = LCF_MEMORY_ARENA_SIZE, .commit_size = LCF_MEMORY_COMMIT_SIZE, .alignment = LCF_MEMORY_ALIGNMENT}) 
+#define Arena_default() Arena_create_custom((Arena){.size = LCF_MEMORY_ARENA_SIZE, .commit_size = (u32) LCF_MEMORY_COMMIT_SIZE, .alignment = (u32) LCF_MEMORY_ALIGNMENT}) 
 #ifndef __cplusplus // TODO(lcf) this cant be used in c++. Do I care?
 #define Arena_create(...) Arena_create_custom((Arena){ \
     .size = LCF_MEMORY_ARENA_SIZE, \

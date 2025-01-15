@@ -1978,11 +1978,21 @@ static inline Quat InvQ(Quat Left)
 
 static inline Quat NormQ(Quat q)
 {
+    Vec4 v; 
+    v.x = q.x;
+    v.y = q.y;
+    v.z = q.z;
+    v.w = q.w;
+
     /* NOTE(lcf): Take advantage of SSE implementation in NormV4 */
-    Vec4 v = (Vec4){q.x, q.y, q.z, q.w};
     v = NormV4(v);
 
-    return (Quat) {v.x, v.y, v.z, v.w};
+    q.x = v.x;
+    q.y = v.y;
+    q.z = v.z;
+    q.w = v.w;
+    
+    return q;
 }
 
 static inline Quat _MixQ(Quat Left, float MixLeft, Quat Right, float MixRight) {
@@ -2024,7 +2034,7 @@ static inline Quat SLerp(Quat Left, Quat Right, float Time)
 
     if (Cos_Theta < 0.0f) { /* NOTE(lcf): Take shortest path on Hyper-sphere */
         Cos_Theta = -Cos_Theta;
-        Right = (Quat){-Right.x, -Right.y, -Right.z, -Right.w};
+        Right.x = -Right.x; Right.y = -Right.y; Right.z = -Right.z; Right.w = -Right.w;
     }
 
     /* NOTE(lcf): Use Normalized Linear interpolation when vectors are roughly not L.I. */
@@ -2106,43 +2116,31 @@ static inline Quat M4ToQ_RH(Mat4 M)
 
     if (M.raw[2][2] < 0.0f) {
         if (M.raw[0][0] > M.raw[1][1]) {
-
             T = 1 + M.raw[0][0] - M.raw[1][1] - M.raw[2][2];
-            Q = (Quat){
-                T,
-                M.raw[0][1] + M.raw[1][0],
-                M.raw[2][0] + M.raw[0][2],
-                M.raw[1][2] - M.raw[2][1]
-            };
+            Q.x = T;
+            Q.y = M.raw[0][1] + M.raw[1][0];
+            Q.z = M.raw[2][0] + M.raw[0][2];
+            Q.w = M.raw[1][2] - M.raw[2][1];
         } else {
-
             T = 1 - M.raw[0][0] + M.raw[1][1] - M.raw[2][2];
-            Q = (Quat){
-                M.raw[0][1] + M.raw[1][0],
-                T,
-                M.raw[1][2] + M.raw[2][1],
-                M.raw[2][0] - M.raw[0][2]
-            };
+            Q.x = M.raw[0][1] + M.raw[1][0];
+            Q.y = T;
+            Q.z = M.raw[1][2] + M.raw[2][1];
+            Q.w = M.raw[2][0] - M.raw[0][2];
         }
     } else {
         if (M.raw[0][0] < -M.raw[1][1]) {
-
             T = 1 - M.raw[0][0] - M.raw[1][1] + M.raw[2][2];
-            Q = (Quat){
-                M.raw[2][0] + M.raw[0][2],
-                M.raw[1][2] + M.raw[2][1],
-                T,
-                M.raw[0][1] - M.raw[1][0]
-            };
+            Q.x = M.raw[2][0] + M.raw[0][2];
+            Q.y = M.raw[1][2] + M.raw[2][1];
+            Q.z = T;
+            Q.w = M.raw[0][1] - M.raw[1][0];
         } else {
-
             T = 1 + M.raw[0][0] + M.raw[1][1] + M.raw[2][2];
-            Q = (Quat){
-                M.raw[1][2] - M.raw[2][1],
-                M.raw[2][0] - M.raw[0][2],
-                M.raw[0][1] - M.raw[1][0],
-                T
-            };
+            Q.x = M.raw[1][2] - M.raw[2][1];
+            Q.y = M.raw[2][0] - M.raw[0][2];
+            Q.z = M.raw[0][1] - M.raw[1][0];
+            Q.w = T;
         }
     }
 
@@ -2158,43 +2156,31 @@ static inline Quat M4ToQ_LH(Mat4 M)
 
     if (M.raw[2][2] < 0.0f) {
         if (M.raw[0][0] > M.raw[1][1]) {
-
             T = 1 + M.raw[0][0] - M.raw[1][1] - M.raw[2][2];
-            Q = (Quat){
-                T,
-                M.raw[0][1] + M.raw[1][0],
-                M.raw[2][0] + M.raw[0][2],
-                M.raw[2][1] - M.raw[1][2]
-            };
+            Q.x =  T;
+            Q.y =  M.raw[0][1] + M.raw[1][0];
+            Q.z =  M.raw[2][0] + M.raw[0][2];
+            Q.w =  M.raw[2][1] - M.raw[1][2];
         } else {
-
             T = 1 - M.raw[0][0] + M.raw[1][1] - M.raw[2][2];
-            Q = (Quat){
-                M.raw[0][1] + M.raw[1][0],
-                T,
-                M.raw[1][2] + M.raw[2][1],
-                M.raw[0][2] - M.raw[2][0]
-            };
+            Q.x = M.raw[0][1] + M.raw[1][0];
+            Q.y = T;
+            Q.z = M.raw[1][2] + M.raw[2][1];
+            Q.w = M.raw[0][2] - M.raw[2][0];
         }
     } else {
         if (M.raw[0][0] < -M.raw[1][1]) {
-
             T = 1 - M.raw[0][0] - M.raw[1][1] + M.raw[2][2];
-            Q = (Quat){
-                M.raw[2][0] + M.raw[0][2],
-                M.raw[1][2] + M.raw[2][1],
-                T,
-                M.raw[1][0] - M.raw[0][1]
-            };
+            Q.x = M.raw[2][0] + M.raw[0][2];
+            Q.y = M.raw[1][2] + M.raw[2][1];
+            Q.z = T;
+            Q.w = M.raw[1][0] - M.raw[0][1];
         } else {
-
             T = 1 + M.raw[0][0] + M.raw[1][1] + M.raw[2][2];
-            Q = (Quat){
-                M.raw[2][1] - M.raw[1][2],
-                M.raw[0][2] - M.raw[2][0],
-                M.raw[1][0] - M.raw[0][2],
-                T
-            };
+            Q.x = M.raw[2][1] - M.raw[1][2];
+            Q.y = M.raw[0][2] - M.raw[2][0];
+            Q.z = M.raw[1][0] - M.raw[0][2];
+            Q.w = T;
         }
     }
 
@@ -2227,7 +2213,10 @@ static inline Vec2 RotateV2(Vec2 V, float Angle)
     float sinA = SinF(Angle);
     float cosA = CosF(Angle);
 
-    return (Vec2){V.x * cosA - V.y * sinA, V.x * sinA + V.y * cosA};
+    V.x = V.x * cosA - V.y * sinA;
+    V.y = V.x * sinA + V.y * cosA;
+
+    return V;
 }
 
 // implementation from

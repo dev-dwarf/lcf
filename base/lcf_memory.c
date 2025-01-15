@@ -113,8 +113,11 @@ void Arena_decommit(Arena *a, u64 needed_pos) {
 }
 
 void Arena_resetp(Arena *a, void* previous_alloc) {
-    u64 pos = ((u8*)(previous_alloc) - Arena_mem_start(a));
-    Arena_reset(a, pos);
+    if (previous_alloc) {
+        ASSERT((u8*)(previous_alloc) - Arena_mem_start(a) > 0);
+        u64 pos = ((u8*)(previous_alloc) - Arena_mem_start(a));
+        Arena_reset(a, pos);
+    }
 }
 
 ArenaSession ArenaSession_begin(Arena *a) {
@@ -134,9 +137,15 @@ void ArenaSession_end(ArenaSession s) {
 #define LCF_SCRATCH_COUNT 2
 per_thread Arena* _arena_scratch_pool[LCF_SCRATCH_COUNT];
 void Arena_thread_init_scratch() {
+    Arena params;
+    params.size = LCF_MEMORY_ARENA_SIZE;
+    params.alignment = (u32) LCF_MEMORY_ALIGNMENT;
+    params.commit_size = (u32) LCF_MEMORY_COMMIT_SIZE;
+    params.commit_pos = 0;
+    
     if (_arena_scratch_pool[0] == 0) {
         for (s32 i = 0; i < LCF_SCRATCH_COUNT; i++) {
-            _arena_scratch_pool[i] = Arena_default();
+            _arena_scratch_pool[i] = Arena_create_custom(params);
         }
     }
 }

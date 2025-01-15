@@ -164,7 +164,7 @@ os_FileInfo os_GetFileInfo(Arena *arena, str filepath) {
     os_FileInfo result;
     WIN32_FIND_DATA fd;
     // WARN(lcf): is void* ok here?
-    HANDLE handle = FindFirstFileA(filepath.str, (void*) &fd);
+    HANDLE handle = FindFirstFileA(filepath.str, (LPWIN32_FIND_DATAA) &fd);
     result = win32_GetFileInfo(arena, handle, fd, strl("."));
     FindClose(handle);
     return result;
@@ -254,7 +254,7 @@ os_FileSearch* os_BeginFileSearch(Arena *arena, str searchstr) {
         // WARN(lcf): is void* ok here?
         fs->handle = FindFirstFileA(cstr.str, (LPWIN32_FIND_DATAA) &(fs->fd));
 
-        s32 loc = str_char_location_backward(searchstr, '/');
+        s32 loc = (s32) str_char_location_backward(searchstr, '/');
         fs->searchdir = str_make_cstring(arena, str_first(searchstr, loc));
     }
     return (os_FileSearch*) fs;
