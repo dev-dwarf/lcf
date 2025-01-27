@@ -85,7 +85,7 @@ f64 str_to_f64(str s, s32 *failure);
 /* Iterations */
 #define str_iter(s, i, c)                           \
     s64 i = 0;                                              \
-    char c = s.str[i];                                      \
+    char c = s.str? s.str[i] : 0;                                      \
     for (; (i < (s64) s.len); i++, c = s.str[i])
 
 #define str_iter_backward(s, i, c)                  \

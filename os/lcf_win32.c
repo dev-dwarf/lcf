@@ -255,6 +255,9 @@ os_FileSearch* os_BeginFileSearch(Arena *arena, str searchstr) {
         fs->handle = FindFirstFileA(cstr.str, (LPWIN32_FIND_DATAA) &(fs->fd));
 
         s32 loc = (s32) str_char_location_backward(searchstr, '/');
+        if (loc == -1) {
+            loc = (s32) str_char_location_backward(searchstr, '\\');
+        }
         fs->searchdir = str_make_cstring(arena, str_first(searchstr, loc));
     }
     return (os_FileSearch*) fs;
