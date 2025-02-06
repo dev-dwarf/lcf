@@ -2,7 +2,6 @@
 #define LCF_HASH
 
 // TODO(lcf) consider adding deletion functions, if useful
-
 struct Table {
     u32 exp;
     s32 keys;
@@ -71,11 +70,11 @@ static Table* Table_create(Arena *a, u32 capacity) {
     return out;
 }
 
-// djb2
-static inline u64 hash_str(str s, u64 *h) {
-    u64 hash = h? *h : 5381;
+// fnv1a_32
+static inline u64 hash_str(str s, u64 hash) {
+    hash = (hash)? hash : 0x811C9DC5;
     str_iter(s, i, c) {
-        hash = ((hash << 5) + hash) + (unsigned)c; /* hash * 33 + c */
+        hash = (((u64) c) ^ hash) * 0x01000193;
     }
     return hash;
 }
